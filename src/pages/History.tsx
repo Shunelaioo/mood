@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useId } from 'react';
+import React, { useState, useMemo, useId, Suspense } from 'react';
 import {
   BarChart3,
   TrendingUp,
@@ -81,10 +81,51 @@ function isSameDay(d1: Date, d2: Date) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Skeleton Component                                                 */
+/* ------------------------------------------------------------------ */
+
+const Skeleton: React.FC = () => (
+  <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-100 dark:from-gray-900 dark:via-purple-900 dark:to-pink-900 py-12 relative overflow-hidden transition-colors">
+    <div className="container mx-auto px-4 relative z-10">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-12 animate-pulse">
+          <div className="h-16 w-16 bg-gray-300 dark:bg-gray-700 rounded-full mx-auto mb-4" />
+          <div className="h-10 w-3/4 bg-gray-300 dark:bg-gray-700 rounded mx-auto mb-2" />
+          <div className="h-6 w-1/2 bg-gray-300 dark:bg-gray-700 rounded mx-auto" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border-2 border-white/50 animate-pulse dark:bg-white/10 dark:border-white/20">
+              <div className="h-6 w-1/3 bg-gray-300 dark:bg-gray-700 rounded mb-2" />
+              <div className="h-10 w-2/3 bg-gray-300 dark:bg-gray-700 rounded" />
+            </div>
+          ))}
+        </div>
+        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border-2 border-white/50 mb-12 animate-pulse dark:bg-white/10 dark:border-white/20">
+          <div className="h-10 w-1/4 bg-gray-300 dark:bg-gray-700 rounded mb-4 mx-auto" />
+          <div className="h-12 w-3/4 bg-gray-300 dark:bg-gray-700 rounded mx-auto" />
+        </div>
+        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border-2 border-white/50 mb-12 animate-pulse dark:bg-white/10 dark:border-white/20">
+          <div className="h-64 w-full bg-gray-300 dark:bg-gray-700 rounded" />
+        </div>
+        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl p-12 border-2 border-white/50 animate-pulse dark:bg-white/10 dark:border-white/20">
+          <div className="h-10 w-1/3 bg-gray-300 dark:bg-gray-700 rounded mb-4 mx-auto" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {[...Array(2)].map((_, i) => (
+              <div key={i} className="h-32 w-full bg-gray-300 dark:bg-gray-700 rounded" />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+/* ------------------------------------------------------------------ */
 /* Component                                                          */
 /* ------------------------------------------------------------------ */
 
-const History: React.FC = () => {
+const HistoryContent: React.FC = () => {
   const { user } = useAuth();
 
   const [viewType, setViewType] = useState<'line' | 'bar'>('line');
@@ -106,8 +147,8 @@ const History: React.FC = () => {
         .from('mood_entries')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
+        .order('created_at', { ascending: false })
+        .limit(100); // Limit to 100 entries initially
       if (error) {
         console.error('Error fetching mood entries:', error);
         throw error;
@@ -115,6 +156,7 @@ const History: React.FC = () => {
       return data as MoodEntry[];
     },
     enabled: !!user,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
 
   /* ----- Mood Score ----- */
@@ -242,67 +284,8 @@ const History: React.FC = () => {
   const gradientLineId = useId();
   const gradientBarId = useId();
 
-  /* ------------------------------------------------------------------ */
-  /* Early Return States                                                */
-  /* ------------------------------------------------------------------ */
-
-  if (!user) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center bg-white/80 backdrop-blur-lg border-white/50 transition-colors bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-100 dark:bg-gradient-to-br dark:from-gray-900 dark:via-purple-900 dark:to-pink-900 text-gray-800 dark:text-white"
-      >
-        <span className="text-gray-800 dark:text-white">Please log in to view your mood history.</span>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center bg-white/80 backdrop-blur-lg border-white/50 transition-colors bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-100 dark:bg-gradient-to-br dark:from-gray-900 dark:via-purple-900 dark:to-pink-900"
-      >
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-purple-600" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center bg-white/80 backdrop-blur-lg border-white/50 transition-colors bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-100 dark:bg-gradient-to-br dark:from-gray-900 dark:via-purple-900 dark:to-pink-900"
-      >
-        <span className="text-red-500">Error loading mood history.</span>
-      </div>
-    );
-  }
-
-  if (moodEntries.length === 0) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center py-12 bg-white/80 backdrop-blur-lg border-white/50 transition-colors bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-100 dark:bg-gradient-to-br dark:from-gray-900 dark:via-purple-900 dark:to-pink-900 text-gray-800 dark:text-white"
-      >
-        <div className="text-gray-800 dark:text-white">
-          <h2 className="text-2xl font-bold mb-4">No mood entries yet</h2>
-          <p className="mb-6">Start tracking your mood to see your beautiful journey here!</p>
-          <a
-            href="/analyze"
-            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-bold hover:scale-105 transition-transform duration-300 inline-block"
-          >
-            Analyze Your Mood
-          </a>
-        </div>
-      </div>
-    );
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Main Render                                                        */
-  /* ------------------------------------------------------------------ */
-
   return (
-    <div
-      className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-100 dark:from-gray-900 dark:via-purple-900 dark:to-pink-900 py-12 relative overflow-hidden transition-colors">
-    
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-100 dark:from-gray-900 dark:via-purple-900 dark:to-pink-900 py-12 relative overflow-hidden transition-colors">
       {/* Floating background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-10 w-40 h-40 rounded-full bg-gradient-to-r from-blue-300/30 to-purple-300/30 dark:from-white/30 dark:to-purple-200/30 animate-float" />
@@ -310,11 +293,10 @@ const History: React.FC = () => {
         <CalendarIcon className="absolute top-32 right-1/4 h-8 w-8 text-blue-400 animate-sparkle" />
         <Star className="absolute top-1/3 left-10 h-4 w-4 text-yellow-400 animate-sparkle" style={{ animationDelay: '2s' }} />
         <Sparkles className="absolute bottom-20 right-10 h-5 w-5 text-purple-400 animate-sparkle" style={{ animationDelay: '4s' }} />
-        {/* New floating elements for dark mode */}
         <Heart className="absolute top-20 left-20 h-8 w-8 text-pink-400 dark:text-pink-200 animate-float dark:block hidden" />
         <Star className="absolute top-40 right-32 h-6 w-6 text-yellow-400 dark:text-yellow-300 animate-sparkle dark:block hidden" />
         <Sparkles className="absolute bottom-32 left-1/4 h-7 w-7 text-purple-400 dark:text-purple-300 animate-sparkle dark:block hidden" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/4 right-1/3 w-48 h-48 rounded-full bg-gradient-to-r from-white/30 to-purple-200/30 animate-pulse-glow blur-sm dark:block hidden"></div>
+        <div className="absolute top-1/4 right-1/3 w-48 h-48 rounded-full bg-gradient-to-r from-white/30 to-purple-200/30 animate-pulse-glow blur-sm dark:block hidden" />
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
@@ -342,7 +324,6 @@ const History: React.FC = () => {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
-            {/* Avg Mood */}
             <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border-2 border-white/50 hover:shadow-3xl hover:scale-105 transition-all duration-500 group dark:bg-white/10 dark:border-white/20 dark:hover:shadow-purple-500/20">
               <div className="flex items-center justify-between">
                 <div>
@@ -354,25 +335,14 @@ const History: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            {/* Trend */}
             <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border-2 border-white/50 hover:shadow-3xl hover:scale-105 transition-all duration-500 group dark:bg-white/10 dark:border-white/20 dark:hover:shadow-purple-500/20" style={{ animationDelay: '0.2s' }}>
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-base font-medium mb-2 text-gray-600 dark:text-gray-300">Trend</p>
                   {(() => {
                     const tr = getTrend();
-                    const cls =
-                      tr === 'improving'
-                        ? 'text-green-600 dark:text-emerald-300'
-                        : tr === 'declining'
-                        ? 'text-red-600 dark:text-rose-300'
-                        : 'text-yellow-600 dark:text-amber-300';
-                    return (
-                      <p className={`text-xl font-black capitalize ${cls}`}>
-                        {tr}
-                      </p>
-                    );
+                    const cls = tr === 'improving' ? 'text-green-600 dark:text-emerald-300' : tr === 'declining' ? 'text-red-600 dark:text-rose-300' : 'text-yellow-600 dark:text-amber-300';
+                    return <p className={`text-xl font-black capitalize ${cls}`}>{tr}</p>;
                   })()}
                 </div>
                 <div className="p-6 bg-gradient-to-r from-blue-100/50 to-purple-100/50 dark:from-white/30 dark:to-purple-200/30 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-500">
@@ -380,8 +350,6 @@ const History: React.FC = () => {
                 </div>
               </div>
             </div>
-
-            {/* Days Tracked */}
             <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border-2 border-white/50 hover:shadow-3xl hover:scale-105 transition-all duration-500 group dark:bg-white/10 dark:border-white/20 dark:hover:shadow-purple-500/20" style={{ animationDelay: '0.4s' }}>
               <div className="flex items-center justify-between">
                 <div>
@@ -402,51 +370,31 @@ const History: React.FC = () => {
                 <div className="p-3 bg-gradient-to-r from-purple-100/60 to-pink-100/60 dark:from-white/30 dark:to-purple-200/30 rounded-xl">
                   <Filter className="h-6 w-6 text-purple-600 dark:text-purple-300" />
                 </div>
-                <span className="font-bold text-lg text-gray-800 dark:text-white">
-                  View Options:
-                </span>
+                <span className="font-bold text-lg text-gray-800 dark:text-white">View Options:</span>
               </div>
-
               <div className="flex flex-wrap gap-4">
-                {/* Line / Bar toggle */}
                 <div className="flex rounded-xl border-2 overflow-hidden shadow-lg border-purple-200 dark:border-white/20">
                   <button
                     onClick={() => setViewType('line')}
-                    className={`px-5 py-3 text-base font-bold transition-all duration-300 ${
-                      viewType === 'line'
-                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent shadow-xl animate-glow'
-                        : 'bg-white/70 border-gray-200 hover:border-gray-300 shadow-lg hover:shadow-xl dark:bg-white/10 dark:border-white/30 dark:hover:border-white/50'
-                    }`}
+                    className={`px-5 py-3 text-base font-bold transition-all duration-300 ${viewType === 'line' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent shadow-xl animate-glow' : 'bg-white/70 border-gray-200 hover:border-gray-300 shadow-lg hover:shadow-xl dark:bg-white/10 dark:border-white/30 dark:hover:border-white/50'}`}
                   >
                     Line Chart
                   </button>
                   <button
                     onClick={() => setViewType('bar')}
-                    className={`px-5 py-3 text-base font-bold transition-all duration-300 ${
-                      viewType === 'bar'
-                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent shadow-xl animate-glow'
-                        : 'bg-white/70 border-gray-200 hover:border-gray-300 shadow-lg hover:shadow-xl dark:bg-white/10 dark:border-white/30 dark:hover:border-white/50'
-                    }`}
+                    className={`px-5 py-3 text-base font-bold transition-all duration-300 ${viewType === 'bar' ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white border-transparent shadow-xl animate-glow' : 'bg-white/70 border-gray-200 hover:border-gray-300 shadow-lg hover:shadow-xl dark:bg-white/10 dark:border-white/30 dark:hover:border-white/50'}`}
                   >
                     Bar Chart
                   </button>
                 </div>
-
-                {/* Calendar toggle */}
                 <button
                   onClick={() => setShowCalendar(!showCalendar)}
-                  className={`flex items-center px-5 py-3 text-base font-bold rounded-xl border-2 transition-all duration-500 shadow-lg hover:scale-105 ${
-                    showCalendar
-                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white border-purple-600 animate-glow'
-                      : 'bg-white text-gray-700 border-purple-200 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:bg-white/10 dark:text-purple-100 dark:border-white/20 dark:hover:bg-white/20'
-                  }`}
+                  className={`flex items-center px-5 py-3 text-base font-bold rounded-xl border-2 transition-all duration-500 shadow-lg hover:scale-105 ${showCalendar ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white border-purple-600 animate-glow' : 'bg-white text-gray-700 border-purple-200 hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 dark:bg-white/10 dark:text-purple-100 dark:border-white/20 dark:hover:bg-white/20'}`}
                 >
                   <CalendarIcon className="h-5 w-5 mr-2" />
                   Mood Calendar
                   <Sparkles className="h-4 w-4 ml-2 animate-sparkle" />
                 </button>
-
-                {/* Time range */}
                 <select
                   value={timeRange}
                   onChange={(e) => setTimeRange(e.target.value as 'week' | 'month' | 'year')}
@@ -464,9 +412,7 @@ const History: React.FC = () => {
           {showCalendar && (
             <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border-2 border-white/50 mb-12 animate-fade-in dark:bg-white/10 dark:border-white/20">
               <div className="flex items-center justify-between mb-8">
-                <h3 className="text-2xl font-black text-gray-800 dark:text-white">
-                  Mood Calendar ✨
-                </h3>
+                <h3 className="text-2xl font-black text-gray-800 dark:text-white">Mood Calendar ✨</h3>
                 <div className="flex items-center space-x-4">
                   <button
                     onClick={() => navigateMonth('prev')}
@@ -485,224 +431,158 @@ const History: React.FC = () => {
                   </button>
                 </div>
               </div>
-
               <div className="grid grid-cols-7 gap-3">
-                {/* Day headers */}
                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
                   <div key={day} className="text-center text-base font-black p-3 rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 text-gray-700 dark:from-white/30 dark:to-purple-200/30 dark:text-purple-100">
                     {day}
                   </div>
                 ))}
-
-                {/* Days */}
                 {generateCalendarDays(currentMonth).map((day, index) => {
-                  if (!day) {
-                    return <div key={index} className="p-3" />;
-                  }
+                  if (!day) return <div key={index} className="p-3" />;
                   const moodData = getMoodData(day);
                   const dayKey = day.toISOString();
                   const dotClass = moodData ? getMoodDotClass(moodData.mood) : '';
-
                   return (
                     <div
                       key={dayKey}
-                      className={`p-3 text-center rounded-xl transition-all duration-300 cursor-pointer border-2 ${
-                        moodData
-                          ? 'hover:bg-gradient-to-r hover:from-blue-100 hover:to-purple-100 hover:border-purple-300 border-transparent shadow-lg hover:shadow-xl hover:scale-105 dark:hover:bg-white/10 dark:hover:border-white/20'
-                          : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 border-transparent dark:hover:bg-white/10'
-                      }`}
+                      className={`p-3 text-center rounded-xl transition-all duration-300 cursor-pointer border-2 ${moodData ? 'hover:bg-gradient-to-r hover:from-blue-100 hover:to-purple-100 hover:border-purple-300 border-transparent shadow-lg hover:shadow-xl hover:scale-105 dark:hover:bg-white/10 dark:hover:border-white/20' : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 border-transparent dark:hover:bg-white/10'}`}
                       onMouseEnter={() => moodData && setHoveredDay(dayKey)}
                       onMouseLeave={() => setHoveredDay(null)}
                     >
-                      <div className="text-base font-bold mb-1 text-gray-800 dark:text-white">
-                        {day.getDate()}
-                      </div>
-                      {moodData && (
-                        <div className={`text-2xl animate-fade-in ${dotClass}`}>
-                          {hoveredDay === dayKey ? moodData.emoji : '●'}
-                        </div>
-                      )}
-                      {moodData && hoveredDay === dayKey && (
-                        <div className="text-xs mt-1 font-medium text-gray-600 dark:text-purple-100">
-                          {moodData.moodText}
-                        </div>
-                      )}
+                      <div className="text-base font-bold mb-1 text-gray-800 dark:text-white">{day.getDate()}</div>
+                      {moodData && <div className={`text-2xl animate-fade-in ${dotClass}`}>{hoveredDay === dayKey ? moodData.emoji : '●'}</div>}
+                      {moodData && hoveredDay === dayKey && <div className="text-xs mt-1 font-medium text-gray-600 dark:text-purple-100">{moodData.moodText}</div>}
                     </div>
                   );
                 })}
               </div>
-
-              {/* Legend */}
               <div className="mt-6 flex items-center justify-center flex-wrap gap-3 text-base font-medium text-gray-600 dark:text-purple-100">
-                <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full">
-                  <span>😢</span><span>Poor (1-2)</span>
-                </div>
-                <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full">
-                  <span>😔</span><span>Low (3-4)</span>
-                </div>
-                <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full">
-                  <span>😐</span><span>Okay (5-6)</span>
-                </div>
-                <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full">
-                  <span>😊</span><span>Good (7-8)</span>
-                </div>
-                <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full">
-                  <span>😄</span><span>Great (9-10)</span>
-                </div>
+                <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full"><span>😢</span><span>Poor (1-2)</span></div>
+                <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full"><span>😔</span><span>Low (3-4)</span></div>
+                <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full"><span>😐</span><span>Okay (5-6)</span></div>
+                <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full"><span>😊</span><span>Good (7-8)</span></div>
+                <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full"><span>😄</span><span>Great (9-10)</span></div>
               </div>
-
-              <div className="mt-4 text-center text-base font-medium text-gray-600 dark:text-purple-100">
-                Hover over a day to see your mood details! ✨
-              </div>
+              <div className="mt-4 text-center text-base font-medium text-gray-600 dark:text-purple-100">Hover over a day to see your mood details! ✨</div>
             </div>
           )}
 
           {/* Chart */}
-<div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border-2 border-white/50 mb-12 animate-fade-in dark:bg-white/10 dark:border-white/20" style={{ animationDelay: '0.8s' }}>
-  <h3 className="text-2xl font-black mb-8 text-center text-gray-800 dark:text-white">
-    Your Mood Journey 📊
-  </h3>
-  <div className="h-96">
-    <ResponsiveContainer width="100%" height="100%">
-      {viewType === 'line' ? (
-        <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#000000" strokeOpacity={1}  className="dark:stroke-[#e0e7ff]" />
-           <XAxis
-        dataKey="formattedDate"
-        stroke="currentColor"
-        tick={{ fill: "currentColor", fontSize: 14, fontWeight: "bold" }}
-        tickFormatter={(value) =>
-          new Date(value).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-          })
-        }
-      />
-      <YAxis
-        stroke="currentColor"
-        tick={{ fill: "currentColor", fontSize: 14, fontWeight: "bold" }}
-        domain={[0, 10]}
-      />
-
-          <Tooltip
-            contentStyle={{
-              backgroundColor: 'rgba(255,255,255,0.95)',
-              border: '2px solid #4b5563',
-              borderRadius: '12px',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              color: '#111827',
-            }}
-          />
-          <Legend />
-          <Line
-            type="monotone"
-            dataKey="mood"
-            stroke={`url(#${gradientLineId})`}
-            strokeWidth={4}
-            dot={{ fill: '#3B82F6', strokeWidth: 3, r: 6 }}
-            name="Mood (1-10)"
-          />
-          <defs>
-            <linearGradient id={gradientLineId} x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor="#3B82F6" />
-              <stop offset="100%" stopColor="#8B5CF6" />
-            </linearGradient>
-          </defs>
-        </LineChart>
-      ) : (
-        <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3"stroke="#000000"strokeOpacity={1} className="dark:stroke-[#e0e7ff]"/>
-
-            <XAxis
-              dataKey="formattedDate"
-              stroke="currentColor"
-              tick={{
-                fill: "currentColor",
-                fontSize: 14,
-                fontWeight: "bold",
-              }}
-              tickFormatter={(value) =>
-                new Date(value).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })
-              }
-            />
-
-            <YAxis
-              stroke="currentColor"
-              tick={{
-                fill: "currentColor",
-                fontSize: 14,
-                fontWeight: "bold",
-              }}
-              domain={[0, 10]}
-            />
-
-
-          <Tooltip
-            contentStyle={{
-              backgroundColor: 'rgba(255,255,255,0.95)',
-              border: '2px solid #4b5563',
-              borderRadius: '12px',
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)',
-              fontSize: '16px',
-              fontWeight: 'bold',
-              color: '#111827',
-            }}
-            wrapperClassName="dark:[&>div]:bg-gray-800 dark:[&>div]:text-white dark:[&>div]:border-gray-600"
-          />
-          <Legend />
-          <Bar
-            dataKey="mood"
-            fill={`url(#${gradientBarId})`}
-            name="Mood (1-10)"
-            radius={[4, 4, 0, 0]}
-          />
-          <defs>
-            <linearGradient id={gradientBarId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#3B82F6" className="dark:stop-color-blue-400" />
-              <stop offset="100%" stopColor="#8B5CF6" className="dark:stop-color-purple-400" />
-            </linearGradient>
-          </defs>
-        </BarChart>
-      )}
-    </ResponsiveContainer>
-  </div>
-</div>
+          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border-2 border-white/50 mb-12 animate-fade-in dark:bg-white/10 dark:border-white/20" style={{ animationDelay: '0.8s' }}>
+            <h3 className="text-2xl font-black mb-8 text-center text-gray-800 dark:text-white">Your Mood Journey 📊</h3>
+            <div className="h-96">
+              <ResponsiveContainer width="100%" height="100%">
+                {viewType === 'line' ? (
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#000000" strokeOpacity={1} className="dark:stroke-[#e0e7ff]" />
+                    <XAxis
+                      dataKey="formattedDate"
+                      stroke="currentColor"
+                      tick={{ fill: "currentColor", fontSize: 14, fontWeight: "bold" }}
+                      tickFormatter={(value) =>
+                        new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                      }
+                    />
+                    <YAxis
+                      stroke="currentColor"
+                      tick={{ fill: "currentColor", fontSize: 14, fontWeight: "bold" }}
+                      domain={[0, 10]}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'rgba(255,255,255,0.95)',
+                        border: '2px solid #4b5563',
+                        borderRadius: '12px',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)',
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        color: '#111827',
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="mood"
+                      stroke={`url(#${gradientLineId})`}
+                      strokeWidth={4}
+                      dot={{ fill: '#3B82F6', strokeWidth: 3, r: 6 }}
+                      name="Mood (1-10)"
+                    />
+                    <defs>
+                      <linearGradient id={gradientLineId} x1="0" y1="0" x2="1" y2="0">
+                        <stop offset="0%" stopColor="#3B82F6" />
+                        <stop offset="100%" stopColor="#8B5CF6" />
+                      </linearGradient>
+                    </defs>
+                  </LineChart>
+                ) : (
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#000000" strokeOpacity={1} className="dark:stroke-[#e0e7ff]" />
+                    <XAxis
+                      dataKey="formattedDate"
+                      stroke="currentColor"
+                      tick={{ fill: "currentColor", fontSize: 14, fontWeight: "bold" }}
+                      tickFormatter={(value) =>
+                        new Date(value).toLocaleDateString("en-US", { month: "short", day: "numeric" })
+                      }
+                    />
+                    <YAxis
+                      stroke="currentColor"
+                      tick={{ fill: "currentColor", fontSize: 14, fontWeight: "bold" }}
+                      domain={[0, 10]}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'rgba(255,255,255,0.95)',
+                        border: '2px solid #4b5563',
+                        borderRadius: '12px',
+                        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)',
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        color: '#111827',
+                      }}
+                      wrapperClassName="dark:[&>div]:bg-gray-800 dark:[&>div]:text-white dark:[&>div]:border-gray-600"
+                    />
+                    <Legend />
+                    <Bar
+                      dataKey="mood"
+                      fill={`url(#${gradientBarId})`}
+                      name="Mood (1-10)"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <defs>
+                      <linearGradient id={gradientBarId} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3B82F6" className="dark:stop-color-blue-400" />
+                        <stop offset="100%" stopColor="#8B5CF6" className="dark:stop-color-purple-400" />
+                      </linearGradient>
+                    </defs>
+                  </BarChart>
+                )}
+              </ResponsiveContainer>
+            </div>
+          </div>
 
           {/* Insights */}
           <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl p-12 border-2 border-white/50 animate-fade-in dark:bg-white/10 dark:border-white/20" style={{ animationDelay: '1s' }}>
-            <h3 className="text-3xl font-black mb-10 text-center text-gray-800 dark:text-white">
-              Your Beautiful Insights ✨
-            </h3>
+            <h3 className="text-3xl font-black mb-10 text-center text-gray-800 dark:text-white">Your Beautiful Insights ✨</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Mood Patterns */}
               <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-8 shadow-xl border-2 border-white/50 hover:shadow-2xl transition-all duration-500 hover:scale-105 group dark:bg-white/10 dark:border-white/20 dark:hover:shadow-purple-500/20">
                 <div className="flex items-center mb-4">
                   <div className="p-3 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-white/30 dark:to-purple-200/30 rounded-xl mr-4 group-hover:scale-110 transition-transform duration-300">
                     <span className="text-2xl">🌟</span>
                   </div>
-                  <h4 className="font-black text-xl text-gray-800 dark:text-white">
-                    Mood Patterns
-                  </h4>
+                  <h4 className="font-black text-xl text-gray-800 dark:text-white">Mood Patterns</h4>
                 </div>
                 <p className="text-base leading-relaxed font-medium text-gray-600 dark:text-gray-300">
                   Your mood journey shows beautiful patterns and growth over time. Keep tracking to discover more insights about your emotional well-being! 💫
                 </p>
               </div>
-
-              {/* Weather Correlation */}
               <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-8 shadow-xl border-2 border-white/50 hover:shadow-2xl transition-all duration-500 hover:scale-105 group dark:bg-white/10 dark:border-white/20 dark:hover:shadow-purple-500/20">
                 <div className="flex items-center mb-4">
                   <div className="p-3 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-white/30 dark:to-purple-200/30 rounded-xl mr-4 group-hover:scale-110 transition-transform duration-300">
                     <span className="text-2xl">☀️</span>
                   </div>
-                  <h4 className="font-black text-xl text-gray-800 dark:text-white">
-                    Weather Correlation
-                  </h4>
+                  <h4 className="font-black text-xl text-gray-800 dark:text-white">Weather Correlation</h4>
                 </div>
                 <p className="text-base leading-relaxed font-medium text-gray-600 dark:text-gray-300">
                   Weather can influence your mood! Track how different conditions affect your feelings and use this awareness to brighten even the cloudiest days. 🌈
@@ -715,5 +595,11 @@ const History: React.FC = () => {
     </div>
   );
 };
+
+const History: React.FC = () => (
+  <Suspense fallback={<Skeleton />}>
+    <HistoryContent />
+  </Suspense>
+);
 
 export default History;

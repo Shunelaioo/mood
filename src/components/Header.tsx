@@ -72,7 +72,7 @@ const Header = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <Brain className="h-8 w-8 text-purple-600" />
-            <span className="text-xl font-bold text-gray-800 dark:text-white">Mood Analyzer</span>
+            <span className="text-xl font-bold text-gray-800 dark:text-white">Moodmuse</span>
           </Link>
 
           {/* Desktop Navigation */}

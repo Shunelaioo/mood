@@ -16,6 +16,7 @@ import Auth from "./pages/Auth";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import EmotionalChatbot from "./components/EmotionalChatbot";
+import Fortune from "./pages/Fortune";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,11 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+               <Route path="/fortune" element={
+                  <ProtectedRoute>
+                    <Fortune />
+                  </ProtectedRoute>
+                } />
               <Route
                 path="/profile"
                 element={

@@ -45,6 +45,25 @@
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Custom mystical colors */
+    --mystic-purple: 266 83% 58%;
+    --mystic-gold: 45 93% 58%;
+    --mystic-deep: 260 50% 25%;
+    --mystic-light: 266 83% 90%;
+
+    /* Gradients */
+    --gradient-mystic: linear-gradient(135deg, hsl(var(--mystic-purple)), hsl(var(--mystic-deep)));
+    --gradient-gold: linear-gradient(135deg, hsl(var(--mystic-gold)), hsl(45 100% 70%));
+    --gradient-cosmic: linear-gradient(180deg, hsl(var(--background)), hsl(266 50% 95%));
+
+    /* Shadows */
+    --shadow-mystic: 0 10px 30px -10px hsl(var(--mystic-purple) / 0.3);
+    --shadow-glow: 0 0 40px hsl(var(--primary-glow) / 0.4);
+    --shadow-card: 0 4px 20px -2px hsl(var(--mystic-purple) / 0.1);
+
+    /* Animations */
+    --transition-mystic: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .dark {
@@ -83,6 +102,16 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer utilities {
+  .bg-gradient-mystic {
+    background-image: var(--gradient-mystic);
+  }
+
+  .border-mystic-light {
+    border-color: hsl(var(--mystic-light));
   }
 }
 

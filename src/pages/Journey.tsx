@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Calendar, Cloud, Bed, Star, Heart, Sparkles, Sun, Moon, Users } from 'lucide-react';
 
@@ -14,34 +13,35 @@ const Journey = () => {
   const [submitted, setSubmitted] = useState(false);
 
   const moodOptions = [
-    { value: 'excellent', label: 'Excellent', emoji: '😄', color: 'bg-gradient-to-r from-green-400 to-emerald-500', border: 'border-green-400' },
-    { value: 'good', label: 'Good', emoji: '😊', color: 'bg-gradient-to-r from-blue-400 to-cyan-500', border: 'border-blue-400' },
-    { value: 'okay', label: 'Okay', emoji: '😐', color: 'bg-gradient-to-r from-yellow-400 to-orange-500', border: 'border-yellow-400' },
-    { value: 'poor', label: 'Poor', emoji: '😔', color: 'bg-gradient-to-r from-orange-400 to-red-500', border: 'border-orange-400' },
-    { value: 'terrible', label: 'Terrible', emoji: '😢', color: 'bg-gradient-to-r from-red-400 to-pink-500', border: 'border-red-400' }
+    { value: 'excellent', label: 'Excellent', emoji: '😄' },
+    { value: 'good', label: 'Good', emoji: '😊' },
+    { value: 'okay', label: 'Okay', emoji: '😐' },
+    { value: 'poor', label: 'Poor', emoji: '😔' },
+    { value: 'terrible', label: 'Terrible', emoji: '😢' }
   ];
-const partnerOptions = [
-    { value: 'alone', label: 'Alone', emoji: '🧘', color: 'bg-gradient-to-r from-gray-400 to-gray-600', border: 'border-gray-400' },
-    { value: 'family', label: 'Family', emoji: '👨‍👩‍👧‍👦', color: 'bg-gradient-to-r from-pink-400 to-red-400', border: 'border-pink-400' },
-    { value: 'friends', label: 'Friends', emoji: '🧑‍🤝‍🧑', color: 'bg-gradient-to-r from-blue-400 to-indigo-400', border: 'border-blue-400' },
-    { value: 'partner', label: 'Romantic Partner', emoji: '💑', color: 'bg-gradient-to-r from-purple-400 to-pink-500', border: 'border-purple-400' },
-    { value: 'colleagues', label: 'Colleagues', emoji: '💼', color: 'bg-gradient-to-r from-green-400 to-emerald-500', border: 'border-green-400' },
-    { value: 'others', label: 'Others', emoji: '✨', color: 'bg-gradient-to-r from-yellow-400 to-orange-400', border: 'border-yellow-400' }
+
+  const partnerOptions = [
+    { value: 'alone', label: 'Alone', emoji: '🧘' },
+    { value: 'family', label: 'Family', emoji: '👨‍👩‍👧‍👦' },
+    { value: 'friends', label: 'Friends', emoji: '🧑‍🤝‍🧑' },
+    { value: 'partner', label: 'Romantic Partner', emoji: '💑' },
+    { value: 'colleagues', label: 'Colleagues', emoji: '💼' },
+    { value: 'others', label: 'Others', emoji: '✨' }
   ];
 
   const weatherOptions = [
-    { value: 'sunny', label: 'Sunny', emoji: '☀️', gradient: 'from-yellow-400 to-orange-400' },
-    { value: 'cloudy', label: 'Cloudy', emoji: '☁️', gradient: 'from-gray-400 to-blue-400' },
-    { value: 'rainy', label: 'Rainy', emoji: '🌧️', gradient: 'from-blue-400 to-indigo-400' },
-    { value: 'snowy', label: 'Snowy', emoji: '❄️', gradient: 'from-blue-200 to-cyan-300' },
-    { value: 'stormy', label: 'Stormy', emoji: '⛈️', gradient: 'from-gray-600 to-purple-600' }
+    { value: 'sunny', label: 'Sunny', emoji: '☀️' },
+    { value: 'cloudy', label: 'Cloudy', emoji: '☁️' },
+    { value: 'rainy', label: 'Rainy', emoji: '🌧️' },
+    { value: 'snowy', label: 'Snowy', emoji: '❄️' },
+    { value: 'stormy', label: 'Stormy', emoji: '⛈️' }
   ];
 
   const sleepOptions = [
-    { value: 'excellent', label: 'Excellent (8+ hours)', emoji: '😴', gradient: 'from-green-400 to-emerald-400' },
-    { value: 'good', label: 'Good (6-8 hours)', emoji: '😊', gradient: 'from-blue-400 to-cyan-400' },
-    { value: 'fair', label: 'Fair (4-6 hours)', emoji: '😐', gradient: 'from-yellow-400 to-orange-400' },
-    { value: 'poor', label: 'Poor (<4 hours)', emoji: '😵', gradient: 'from-red-400 to-pink-400' }
+    { value: 'excellent', label: 'Excellent (8+ hours)', emoji: '😴' },
+    { value: 'good', label: 'Good (6-8 hours)', emoji: '😊' },
+    { value: 'fair', label: 'Fair (4-6 hours)', emoji: '😐' },
+    { value: 'poor', label: 'Poor (<4 hours)', emoji: '😵' }
   ];
 
   const getSupportMessage = () => {
@@ -95,7 +95,7 @@ const partnerOptions = [
               <button
                 onClick={() => {
                   setSubmitted(false);
-                  setJourneyData({ mood: '', partner:'', weather: '', sleep: '', dayQuality: '', notes: '' });
+                  setJourneyData({ mood: '', partner: '', weather: '', sleep: '', dayQuality: '', notes: '' });
                 }}
                 className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-2xl font-bold hover:from-purple-700 hover:to-pink-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 animate-glow"
               >
@@ -130,7 +130,6 @@ const partnerOptions = [
           {/* Header */}
           <div className="text-center mb-12 animate-fade-in">
             <div className="relative mb-8">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur-lg opacity-50 animate-glow"></div>
               <Calendar className="relative h-20 w-20 text-blue-600 dark:text-blue-400 mx-auto transition-colors" />
             </div>
             <h1 className="text-5xl md:text-6xl font-bold text-gray-800 dark:text-white mb-6 transition-colors">
@@ -138,7 +137,9 @@ const partnerOptions = [
                 Mood Journey
               </span>
             </h1>
-            <p className="text-gray-600 dark:text-gray-300 text-xl leading-relaxed max-w-2xl mx-auto transition-colors">Track your daily emotions and receive personalized support on your wellness journey</p>
+            <p className="text-gray-600 dark:text-gray-300 text-xl leading-relaxed max-w-2xl mx-auto transition-colors">
+              Track your daily emotions and receive personalized support on your wellness journey
+            </p>
           </div>
 
           {/* Form */}
@@ -155,48 +156,62 @@ const partnerOptions = [
                     key={option.value}
                     type="button"
                     onClick={() => setJourneyData({...journeyData, mood: option.value})}
-                    className={`p-6 rounded-2xl border-2 transition-all duration-300 hover:scale-105 transform ${
-                      journeyData.mood === option.value 
-                        ? `${option.color} text-white border-transparent shadow-xl animate-glow` 
-                        : 'bg-white/70 dark:bg-white/10 border-gray-200 dark:border-white/30 hover:border-gray-300 dark:hover:border-white/50 shadow-lg hover:shadow-xl'
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center space-y-2 hover:scale-105 ${
+                      journeyData.mood === option.value
+                        ? 'border-purple-500 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-500/30 dark:to-pink-500/30 shadow-lg'
+                        : 'border-gray-200 dark:border-white/30 bg-white/60 dark:bg-white/10 hover:bg-gradient-to-r hover:from-purple-200 hover:to-pink-200 dark:hover:from-purple-600/30 dark:hover:to-pink-600/30 hover:border-purple-500 dark:hover:border-purple-400'
                     }`}
                   >
-                    <div className="text-3xl mb-2">{option.emoji}</div>
-                    <div className={`text-sm font-semibold ${journeyData.mood === option.value ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>{option.label}</div>
+                    <span
+                      className={`text-2xl ${journeyData.mood === option.value ? 'text-purple-600 dark:text-purple-300' : 'text-gray-600 dark:text-gray-300'}`}
+                      role="img"
+                      aria-label={option.label}
+                    >
+                      {option.emoji}
+                    </span>
+                    <span className={`text-sm font-medium ${journeyData.mood === option.value ? 'text-purple-800 dark:text-purple-200' : 'text-gray-700 dark:text-gray-300'}`}>
+                      {option.label}
+                    </span>
                   </button>
                 ))}
               </div>
             </div>
-		
 
+            {/* Partner Section */}
+            <div className="mb-12">
+              <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center transition-colors">
+                <Users className="h-6 w-6 mr-3 text-emerald-500" />
+                Who did you spend most of your day with?
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                {partnerOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setJourneyData({...journeyData, partner: option.value})}
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center space-y-2 hover:scale-105 ${
+                      journeyData.partner === option.value
+                        ? 'border-purple-500 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-500/30 dark:to-pink-500/30 shadow-lg'
+                        : 'border-gray-200 dark:border-white/30 bg-white/60 dark:bg-white/10 hover:bg-gradient-to-r hover:from-purple-200 hover:to-pink-200 dark:hover:from-purple-600/30 dark:hover:to-pink-600/30 hover:border-purple-500 dark:hover:border-purple-400'
+                    }`}
+                  >
+                    <span
+                      className={`text-2xl ${journeyData.partner === option.value ? 'text-purple-600 dark:text-purple-300' : 'text-gray-600 dark:text-gray-300'}`}
+                      role="img"
+                      aria-label={option.label}
+                    >
+                      {option.emoji}
+                    </span>
+                    <span className={`text-sm font-medium ${journeyData.partner === option.value ? 'text-purple-800 dark:text-purple-200' : 'text-gray-700 dark:text-gray-300'}`}>
+                      {option.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
-{/* Partner Section */}
-      <div className="mb-12">
-        <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center transition-colors">
-          <Users className="h-6 w-6 mr-3 text-emerald-500" />
-          Who did you spend most of your day with?
-        </h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {partnerOptions.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => setJourneyData({...journeyData, partner: option.value})}
-              className={`p-6 rounded-2xl border-2 transition-all duration-300 hover:scale-105 transform shadow-lg hover:shadow-xl ${
-                journeyData.partner === option.value
-                  ? `${option.color} text-white border-transparent animate-glow`
-                  : 'bg-white/70 dark:bg-white/10 border-gray-200 dark:border-white/30 hover:border-gray-300 dark:hover:border-white/50'
-              }`}
-            >
-              <div className="text-3xl mb-2">{option.emoji}</div>
-              <div className={`text-sm font-semibold ${journeyData.partner === option.value ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>{option.label}</div>
-            </button>
-          ))}
-        </div>
-      </div>
             {/* Weather */}
             <div className="mb-12">
-
               <h3 className="text-2xl font-bold text-gray-800 dark:text-white mb-6 flex items-center transition-colors">
                 <Cloud className="h-6 w-6 mr-3 text-blue-500" />
                 What was the weather like?
@@ -207,14 +222,22 @@ const partnerOptions = [
                     key={option.value}
                     type="button"
                     onClick={() => setJourneyData({...journeyData, weather: option.value})}
-                    className={`p-6 rounded-2xl border-2 transition-all duration-300 hover:scale-105 transform shadow-lg hover:shadow-xl ${
-                      journeyData.weather === option.value 
-                        ? `bg-gradient-to-r ${option.gradient} text-white border-transparent animate-glow` 
-                        : 'bg-white/70 dark:bg-white/10 border-gray-200 dark:border-white/30 hover:border-gray-300 dark:hover:border-white/50'
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center space-y-2 hover:scale-105 ${
+                      journeyData.weather === option.value
+                        ? 'border-purple-500 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-500/30 dark:to-pink-500/30 shadow-lg'
+                        : 'border-gray-200 dark:border-white/30 bg-white/60 dark:bg-white/10 hover:bg-gradient-to-r hover:from-purple-200 hover:to-pink-200 dark:hover:from-purple-600/30 dark:hover:to-pink-600/30 hover:border-purple-500 dark:hover:border-purple-400'
                     }`}
                   >
-                    <div className="text-3xl mb-2">{option.emoji}</div>
-                    <div className={`text-sm font-semibold ${journeyData.weather === option.value ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>{option.label}</div>
+                    <span
+                      className={`text-2xl ${journeyData.weather === option.value ? 'text-purple-600 dark:text-purple-300' : 'text-gray-600 dark:text-gray-300'}`}
+                      role="img"
+                      aria-label={option.label}
+                    >
+                      {option.emoji}
+                    </span>
+                    <span className={`text-sm font-medium ${journeyData.weather === option.value ? 'text-purple-800 dark:text-purple-200' : 'text-gray-700 dark:text-gray-300'}`}>
+                      {option.label}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -232,16 +255,22 @@ const partnerOptions = [
                     key={option.value}
                     type="button"
                     onClick={() => setJourneyData({...journeyData, sleep: option.value})}
-                    className={`p-6 rounded-2xl border-2 transition-all duration-300 hover:scale-105 transform text-left shadow-lg hover:shadow-xl ${
-                      journeyData.sleep === option.value 
-                        ? `bg-gradient-to-r ${option.gradient} text-white border-transparent animate-glow` 
-                        : 'bg-white/70 dark:bg-white/10 border-gray-200 dark:border-white/30 hover:border-gray-300 dark:hover:border-white/50'
+                    className={`p-4 rounded-xl border-2 transition-all duration-300 flex flex-col items-center space-y-2 hover:scale-105 ${
+                      journeyData.sleep === option.value
+                        ? 'border-purple-500 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-500/30 dark:to-pink-500/30 shadow-lg'
+                        : 'border-gray-200 dark:border-white/30 bg-white/60 dark:bg-white/10 hover:bg-gradient-to-r hover:from-purple-200 hover:to-pink-200 dark:hover:from-purple-600/30 dark:hover:to-pink-600/30 hover:border-purple-500 dark:hover:border-purple-400'
                     }`}
                   >
-                    <div className="flex items-center">
-                      <span className="text-3xl mr-4">{option.emoji}</span>
-                      <span className={`font-semibold ${journeyData.sleep === option.value ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}>{option.label}</span>
-                    </div>
+                    <span
+                      className={`text-2xl ${journeyData.sleep === option.value ? 'text-purple-600 dark:text-purple-300' : 'text-gray-600 dark:text-gray-300'}`}
+                      role="img"
+                      aria-label={option.label}
+                    >
+                      {option.emoji}
+                    </span>
+                    <span className={`text-sm font-medium ${journeyData.sleep === option.value ? 'text-purple-800 dark:text-purple-200' : 'text-gray-700 dark:text-gray-300'}`}>
+                      {option.label}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -281,7 +310,7 @@ const partnerOptions = [
                 value={journeyData.notes}
                 onChange={(e) => setJourneyData({...journeyData, notes: e.target.value})}
                 placeholder="How are you feeling? What happened today? Any thoughts you'd like to record... ✨"
-                className="w-full p-6 border-2 border-gray-300 dark:border-white/30 rounded-2xl focus:ring-4 focus:ring-purple-200 dark:focus:ring-purple-500/30 focus:border-purple-400 resize-none bg-white/70 dark:bg-white/10 backdrop-blur-sm text-lg text-gray-700 dark:text-white placeholder-gray-400 transition-colors"
+                className="w-full p-6 border-2 border-gray-300 dark:border-white/30 rounded-2xl focus:ring-4 focus:ring-purple-200 dark:focus:ring-purple-500/30 focus:border-purple-400 resize-none bg-white/60 dark:bg-white/10 backdrop-blur-sm text-lg text-gray-700 dark:text-white placeholder-gray-400 transition-colors"
                 rows={4}
               />
             </div>
