@@ -12,7 +12,7 @@ const Footer = () => {
               <span className="text-xl font-bold">Mood Analyzer</span>
             </div>
             <p className="text-gray-400 dark:text-gray-300 mb-4">
-              Understanding your emotions, supporting your mental wellness journey. 
+              Understanding your emotions, supporting your mental wellness journey.
               Track, analyze, and improve your mood with personalized insights.
             </p>
             <div className="flex items-center space-x-4">
@@ -36,10 +36,10 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4">Support</h3>
             <ul className="space-y-2">
-              <li><a href="#" className="text-gray-400 dark:text-gray-300 hover:text-white dark:hover:text-gray-200 transition-colors">Help Center</a></li>
-              <li><a href="#" className="text-gray-400 dark:text-gray-300 hover:text-white dark:hover:text-gray-200 transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="text-gray-400 dark:text-gray-300 hover:text-white dark:hover:text-gray-200 transition-colors">Terms of Service</a></li>
-              <li><a href="#" className="text-gray-400 dark:text-gray-300 hover:text-white dark:hover:text-gray-200 transition-colors">Contact Us</a></li>
+              <li><a href="/Support" className="text-gray-400 dark:text-gray-300 hover:text-white dark:hover:text-gray-200 transition-colors">Help Center</a></li>
+              <li><a href="/Support" className="text-gray-400 dark:text-gray-300 hover:text-white dark:hover:text-gray-200 transition-colors">Privacy Policy</a></li>
+              <li><a href="/Support" className="text-gray-400 dark:text-gray-300 hover:text-white dark:hover:text-gray-200 transition-colors">Terms of Service</a></li>
+              <li><a href="/Support" className="text-gray-400 dark:text-gray-300 hover:text-white dark:hover:text-gray-200 transition-colors">Contact Us</a></li>
             </ul>
           </div>
         </div>

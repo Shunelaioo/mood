@@ -14,90 +14,224 @@ export type Database = {
   }
   public: {
     Tables: {
+      fortune_quotes: {
+        Row: {
+          feeling: string | null
+          id: number
+          quote: string | null
+        }
+        Insert: {
+          feeling?: string | null
+          id?: number
+          quote?: string | null
+        }
+        Update: {
+          feeling?: string | null
+          id?: number
+          quote?: string | null
+        }
+        Relationships: []
+      }
       mood_entries: {
         Row: {
           created_at: string | null
-          emoji: string
           feelings_text: string
           id: string
           message: string | null
           mood: string
-          suggested_activities: Json | null
           theme: string | null
           user_id: string
           weather: string | null
         }
         Insert: {
           created_at?: string | null
-          emoji: string
           feelings_text: string
           id?: string
           message?: string | null
           mood: string
-          suggested_activities?: Json | null
           theme?: string | null
           user_id: string
           weather?: string | null
         }
         Update: {
           created_at?: string | null
-          emoji?: string
           feelings_text?: string
           id?: string
           message?: string | null
           mood?: string
-          suggested_activities?: Json | null
           theme?: string | null
           user_id?: string
           weather?: string | null
         }
         Relationships: []
       }
-      profiles: {
+       profiles: {
         Row: {
           avatar_url: string | null
-          bio: string | null
           created_at: string | null
           date_of_birth: string | null
           email: string | null
           full_name: string | null
           id: string
-          location: string | null
-          phone: string | null
+          last_active_at: string | null
+          reminded: boolean | null
           updated_at: string | null
+          user_role: string | null
+          gender: string | null
           username: string | null
-          website: string | null
         }
         Insert: {
           avatar_url?: string | null
-          bio?: string | null
           created_at?: string | null
           date_of_birth?: string | null
           email?: string | null
           full_name?: string | null
           id: string
-          location?: string | null
-          phone?: string | null
+          last_active_at?: string | null
+          reminded?: boolean | null
           updated_at?: string | null
+          user_role?: string | null
+          gender?: string | null
           username?: string | null
-          website?: string | null
         }
         Update: {
           avatar_url?: string | null
-          bio?: string | null
           created_at?: string | null
           date_of_birth?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
-          location?: string | null
-          phone?: string | null
+          last_active_at?: string | null
+          reminded?: boolean | null
           updated_at?: string | null
+          user_role?: string | null
+          gender?: string | null
           username?: string | null
-          website?: string | null
         }
         Relationships: []
       }
+      quiz_options: {
+        Row: {
+          id: number
+          label: string | null
+          mood: string | null
+          question_id: number
+          value: string | null
+        }
+        Insert: {
+          id?: number
+          label?: string | null
+          mood?: string | null
+          question_id: number
+          value?: string | null
+        }
+        Update: {
+          id?: number
+          label?: string | null
+          mood?: string | null
+          question_id?: number
+          value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_options_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+
+      quiz_questions: {
+        Row: {
+          id: number
+          type: string | null
+          question: string | null
+          age_range: string | null
+          gender: string | null
+          user_role: string | null
+        }
+        Insert: {
+          id?: number
+          type?: string | null
+          question?: string | null
+          age_range?: string | null
+          gender?: string | null
+          user_role?: string | null
+        }
+        Update: {
+          id?: number
+          type?: string | null
+          question?: string | null
+          age_range?: string | null
+          gender?: string | null
+          user_role?: string | null
+        }
+        Relationships: []
+      }
+
+      mood_track: {
+      Row: {
+        id: string
+        user_id: string | null
+        created_at: string | null
+        mood: number | null
+        sleep_quality: string | null
+        weather: string | null
+        interaction_with: string[] | null
+        note: string | null
+      }
+      Insert: {
+        id?: string
+        user_id?: string | null
+        created_at?: string | null
+        mood?: number | null
+        sleep_quality?: string | null
+        weather?: string | null
+        interaction_with?: string[] | null
+        note?: string | null
+      }
+      Update: {
+        id?: string
+        user_id?: string | null
+        created_at?: string | null
+        mood?: number | null
+        sleep_quality?: string | null
+        weather?: string | null
+        interaction_with?: string[] | null
+        note?: string | null
+      }
+      Relationships: []
+    }
+    goals: {
+  Row: {
+    id: string;
+    user_id: string;
+    description: string;
+    is_completed: boolean;
+    created_at: string;
+    completed_at: string | null;
+  };
+  Insert: {
+    id?: string;
+    user_id: string;
+    description: string;
+    is_completed?: boolean;
+    created_at?: string;
+    completed_at?: string | null;
+  };
+  Update: {
+    id?: string;
+    user_id?: string;
+    description?: string;
+    is_completed?: boolean;
+    created_at?: string;
+    completed_at?: string | null;
+  };
+  Relationships: [];
+},
+
     }
     Views: {
       [_ in never]: never

@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageSquare, Send, Loader2, Sparkles, Heart, Brain, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom'; // ✅ import useNavigate
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface Message {
   id: string;
   text: string;
   isUser: boolean;
   timestamp: Date;
+  formattedText?: React.ReactNode;
 }
 
 interface EmotionalChatbotProps {
@@ -16,11 +17,42 @@ interface EmotionalChatbotProps {
   onClose: () => void;
 }
 
+const formatBotResponse = (text: string) => {
+  const paragraphs = text.split('\n\n');
+  
+  return paragraphs.map((paragraph, index) => {
+    if (paragraph.startsWith('- ')) {
+      const items = paragraph.split('\n- ').filter(item => item.trim());
+      return (
+        <ul key={index} className="list-disc pl-5 space-y-1 mb-3">
+          {items.map((item, i) => (
+            <li key={i}>{item}</li>
+          ))}
+        </ul>
+      );
+    }
+    
+    if (paragraph.match(/^\d+\. /)) {
+      const items = paragraph.split(/\n\d+\. /).filter(item => item.trim());
+      return (
+        <ol key={index} className="list-decimal pl-5 space-y-1 mb-3">
+          {items.map((item, i) => (
+            <li key={i}>{item}</li>
+          ))}
+        </ol>
+      );
+    }
+    
+    return <p key={index} className="mb-3">{paragraph}</p>;
+  });
+};
+
 const EmotionalChatbot = ({ mood, context, onClose }: EmotionalChatbotProps) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
       text: `Hello! I'm here to provide emotional support and listen to whatever you'd like to share. ${mood ? `I understand you're feeling ${mood} right now.` : ''} How can I help you today?`,
+      formattedText: `Hello! I'm here to provide emotional support and listen to whatever you'd like to share. ${mood ? `I understand you're feeling ${mood} right now.` : ''} How can I help you today?`,
       isUser: false,
       timestamp: new Date(),
     }
@@ -28,7 +60,8 @@ const EmotionalChatbot = ({ mood, context, onClose }: EmotionalChatbotProps) => 
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate(); // ✅ initialize navigate
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -53,8 +86,16 @@ const EmotionalChatbot = ({ mood, context, onClose }: EmotionalChatbotProps) => 
     setIsLoading(true);
 
     try {
+      const history = messages
+        .filter(msg => msg.id !== 'welcome')
+        .map(msg => ({
+          role: msg.isUser ? "user" : "model",
+          text: msg.text,
+        }));
+
       const { data, error } = await supabase.functions.invoke('emotional-chat', {
         body: {
+          history: history,
           message: inputMessage,
           mood: mood,
           context: context,
@@ -66,6 +107,7 @@ const EmotionalChatbot = ({ mood, context, onClose }: EmotionalChatbotProps) => 
       const botMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: data.reply,
+        formattedText: formatBotResponse(data.reply),
         isUser: false,
         timestamp: new Date(),
       };
@@ -76,6 +118,7 @@ const EmotionalChatbot = ({ mood, context, onClose }: EmotionalChatbotProps) => 
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         text: "I'm sorry, I'm having trouble responding right now. Please try again in a moment.",
+        formattedText: "I'm sorry, I'm having trouble responding right now. Please try again in a moment.",
         isUser: false,
         timestamp: new Date(),
       };
@@ -92,9 +135,10 @@ const EmotionalChatbot = ({ mood, context, onClose }: EmotionalChatbotProps) => 
     }
   };
 
+
   const handleClose = () => {
-    onClose();          // ✅ call parent callback
-    navigate('/');      // ✅ navigate away (change to '/profile' or other if needed)
+    onClose(); // Call parent callback to close chatbot
+    navigate(location.pathname, { replace: true }); // Navigate to current route
   };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
@@ -102,7 +146,6 @@ const EmotionalChatbot = ({ mood, context, onClose }: EmotionalChatbotProps) => 
       handleClose();
     }
   };
-
   return (
     <div
       className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in"
@@ -157,7 +200,9 @@ const EmotionalChatbot = ({ mood, context, onClose }: EmotionalChatbotProps) => 
                     : 'bg-white/80 backdrop-blur-sm text-gray-800 border-white/50 shadow-gray-200/50'
                 }`}
               >
-                <p className="text-sm leading-relaxed font-medium">{message.text}</p>
+                <div className="text-sm leading-relaxed font-medium">
+                  {message.formattedText || message.text}
+                </div>
                 <p
                   className={`text-xs mt-2 flex items-center space-x-1 ${
                     message.isUser ? 'text-purple-200' : 'text-gray-500'

@@ -3,8 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
 
+import { AuthProvider } from "./contexts/AuthContext";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -17,12 +17,16 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import EmotionalChatbot from "./components/EmotionalChatbot";
 import Fortune from "./pages/Fortune";
+import Support from "./pages/support";
+import MoodGarden from "./pages/MoodGarden";
+import AutoSendInactiveEmails from "./components/AutoSendInactiveEmails";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
+      <AutoSendInactiveEmails />
       <Toaster />
       <Sonner />
       <BrowserRouter>
@@ -54,11 +58,22 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-               <Route path="/fortune" element={
+              <Route
+                path="/moodgarden"
+                element={
+                  <ProtectedRoute>
+                    <MoodGarden />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/fortune"
+                element={
                   <ProtectedRoute>
                     <Fortune />
                   </ProtectedRoute>
-                } />
+                }
+              />
               <Route
                 path="/profile"
                 element={
@@ -67,7 +82,10 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
-              <Route path="/auth" element={<Auth />} />
+              <Route path="/support" element={<Support />} />
+               <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Auth />} />
+        <Route path="/signup" element={<Auth />} />
               <Route path="/login" element={<Auth />} />
               <Route
                 path="/emotionalchatbot"
@@ -75,7 +93,9 @@ const App = () => (
                   <EmotionalChatbot onClose={() => console.log("EmotionalChatbot closed")} />
                 }
               />
+              <Route path="/support" element={<Support />} />
               {/* Catch-all route */}
+              
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Layout>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Menu, X, Brain, LogIn, LogOut, Moon, Sun } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,6 +9,7 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState<string>('');
   const { user, signOut } = useAuth();
+  const location = useLocation();
 
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     return localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
@@ -65,6 +66,9 @@ const Header = () => {
     }
   }, [user]);
 
+  // Hide login button if on /login or /signup page
+  const showLoginButton = !['/login', '/signup'].includes(location.pathname) && !user;
+
   return (
     <header className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700">
       <div className="container mx-auto px-4">
@@ -90,6 +94,9 @@ const Header = () => {
                 </Link>
                 <Link to="/history" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
                   History
+                </Link>
+                <Link to="/moodgarden" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                  Mood Garden
                 </Link>
               </>
             )}
@@ -125,13 +132,15 @@ const Header = () => {
                 </button>
               </div>
             ) : (
-              <Link
-                to="/auth"
-                className="hidden md:flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
-              >
-                <LogIn className="h-4 w-4" />
-                <span>Login</span>
-              </Link>
+              showLoginButton && (
+                <Link
+                  to="/login" // Changed from /auth to /login
+                  className="hidden md:flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  <LogIn className="h-4 w-4" />
+                  <span>Login</span>
+                </Link>
+              )
             )}
 
             {/* Mobile Menu Button */}
@@ -159,6 +168,9 @@ const Header = () => {
                   <Link to="/history" onClick={() => setIsMenuOpen(false)} className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
                     History
                   </Link>
+                  <Link to="/moodgarden" onClick={() => setIsMenuOpen(false)} className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                    Mood Garden
+                  </Link>
                   <div className="flex items-center space-x-3 pt-2 border-t border-gray-200 dark:border-gray-700">
                     <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
                       <Avatar className="h-8 w-8">
@@ -179,14 +191,16 @@ const Header = () => {
                   </button>
                 </>
               ) : (
-                <Link
-                  to="/auth"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
-                >
-                  <LogIn className="h-4 w-4" />
-                  <span>Login</span>
-                </Link>
+                showLoginButton && (
+                  <Link
+                    to="/login" // Changed from /auth to /login
+                    onClick={() => setIsMenuOpen(false)}
+                    className="flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
+                  >
+                    <LogIn className="h-4 w-4" />
+                    <span>Login</span>
+                  </Link>
+                )
               )}
             </div>
           </nav>

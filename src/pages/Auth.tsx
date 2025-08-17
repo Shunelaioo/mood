@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import { Brain, Mail, Lock, Eye, EyeOff, Heart, Sparkles, Star, Zap, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const location = useLocation();
+  const isLogin = location.pathname === "/login"; // detect mode from route
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -60,7 +62,7 @@ const Auth = () => {
       console.error('Auth error:', error);
       toast({
         title: "Error",
-        description: (error instanceof Error ? error.message : "An error occurred during authentication.") || "An error occurred during authentication.",
+        description: (error instanceof Error ? error.message : "An error occurred during authentication."),
         variant: "destructive",
       });
     } finally {
@@ -75,7 +77,7 @@ const Auth = () => {
         <div className="absolute top-20 left-20 w-32 h-32 rounded-full bg-gradient-to-r from-purple-300/40 to-pink-300/40 dark:from-purple-500/20 dark:to-pink-500/20 animate-float"></div>
         <div className="absolute top-40 right-32 w-24 h-24 rounded-full bg-gradient-to-r from-blue-300/40 to-cyan-300/40 dark:from-blue-500/20 dark:to-cyan-500/20 animate-float" style={{ animationDelay: '2s' }}></div>
         <div className="absolute bottom-32 left-1/4 w-40 h-40 rounded-full bg-gradient-to-r from-indigo-300/40 to-purple-300/40 dark:from-indigo-500/20 dark:to-purple-500/20 animate-float" style={{ animationDelay: '4s' }}></div>
-        
+
         {/* Floating Icons */}
         <Heart className="absolute top-32 left-32 h-8 w-8 text-pink-300 dark:text-pink-400 animate-sparkle" />
         <Sparkles className="absolute top-60 right-40 h-6 w-6 text-purple-300 dark:text-purple-400 animate-sparkle" style={{ animationDelay: '1s' }} />
@@ -186,12 +188,21 @@ const Auth = () => {
           <div className="mt-8 text-center">
             <p className="text-gray-600 dark:text-gray-300 mb-4 transition-colors">
               {isLogin ? "Don't have an account?" : "Already have an account?"}{' '}
-              <button
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-bold hover:underline transition-colors"
-              >
-                {isLogin ? 'Sign up' : 'Sign in'}
-              </button>
+              {isLogin ? (
+                <Link
+                  to="/signup"
+                  className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-bold hover:underline transition-colors"
+                >
+                  Sign up
+                </Link>
+              ) : (
+                <Link
+                  to="/login"
+                  className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-bold hover:underline transition-colors"
+                >
+                  Sign in
+                </Link>
+              )}
             </p>
             <Link
               to="/"

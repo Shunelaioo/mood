@@ -49,16 +49,18 @@ const FortuneApp = () => {
     setCurrentStep('fortune');
   };
 
-  const analyzeMood = (profile: UserProfile): Mood => {
-    const { energyLevel, recentFeeling, currentChallenge } = profile;
+const analyzeMood = (profile: UserProfile): Mood => {
+  const { energyLevel, recentFeeling, currentChallenge } = profile;
 
-    if (energyLevel === 'high' && recentFeeling.includes('happy')) return 'energetic';
-    if (recentFeeling.includes('anxious') || recentFeeling.includes('worried')) return 'anxious';
-    if (recentFeeling.includes('sad') || currentChallenge.includes('difficult')) return 'melancholic';
-    if (energyLevel === 'low' && recentFeeling.includes('peaceful')) return 'calm';
-    if (recentFeeling.includes('optimistic') || recentFeeling.includes('excited')) return 'hopeful';
-    return 'happy';
-  };
+  if (recentFeeling === 'energetic') return 'energetic';
+  if (recentFeeling === 'anxious') return 'anxious';
+  if (recentFeeling === 'melancholic') return 'melancholic';
+  if (recentFeeling === 'calm') return 'calm';
+  if (recentFeeling === 'hopeful') return 'hopeful';
+  if (recentFeeling === 'happy') return 'happy';
+
+  return 'calm';
+}
 
   const renderStep = () => {
     switch (currentStep) {
@@ -80,7 +82,7 @@ const FortuneApp = () => {
                 />
               ))}
             </div>
-
+            
             {/* Glowing Orb for dark theme, softened for light */}
             <div className="absolute top-1/4 right-1/3 w-48 h-48 rounded-full
               bg-gradient-to-r from-purple-300/40 to-pink-300/40

@@ -2,11 +2,12 @@ import { Link } from 'react-router-dom';
 import { Brain, Calendar, BarChart3, Heart, Zap, Sun, Sparkles, Star, Moon, Rainbow, Flower2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useState } from 'react';
+import EmotionalChatbot from '@/components/EmotionalChatbot'; 
 
 const Home = () => {
   const { user } = useAuth();
   const [showFortunePopup, setShowFortunePopup] = useState(false);
-
+const [showChatbot, setShowChatbot] = useState(false);
   const features = [
     {
       icon: Brain,
@@ -119,7 +120,7 @@ const Home = () => {
 
 <p className="text-lg md:text-xl text-gray-700 dark:text-gray-300 mb-12 leading-relaxed max-w-4xl mx-auto font-medium">
   Discover the magic in your emotions, track your wellness journey, and receive
-  <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 dark:from-purple-400 dark:to-pink-400 font-bold"> personalized insights </span>
+   personalized insights 
   to nurture your mental health with our AI-powered companion ✨
 </p>
 
@@ -131,18 +132,33 @@ const Home = () => {
               <>
                 <Link 
                   to="/analyze"
-                  className="group relative px-6 py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 text-white rounded-2xl font-bold text-base hover:from-purple-700 hover:via-pink-700 hover:to-indigo-700 transition-all duration-500 shadow-2xl hover:shadow-3xl transform hover:scale-105 animate-glow overflow-hidden"
-                >
+                  className="group relative px-6 py-3 
+                  bg-gradient-to-r from-purple-300 to-pink-300 
+                  dark:from-purple-600 dark:to-pink-600 
+                  hover:from-purple-400 hover:to-pink-400 
+                  dark:hover:from-purple-700 dark:hover:to-pink-700 
+                  text-gray-800 dark:text-white 
+                  font-semibold text-lg rounded-xl 
+                  transition-all duration-300 animate-journey-pulse shadow-md hover:shadow-lg"
+>
                   <span className="relative z-10 flex items-center justify-center">
-                    <Brain className="mr-2 h-5 w-5 animate-pulse" />
+                    <Brain className="mr-2 h-5 w-5 group-hover:animate-bounce" />
                     Analyze Mood
-                    <Sparkles className="ml-2 h-5 w-5 animate-spin" />
+                    <Sparkles className="ml-2 h-5 w-5 group-hover:animate-spin" />
                   </span>
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"></div>
                 </Link>
                 <Link 
                   to="/journey"
-                  className="group relative px-6 py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 text-white rounded-2xl font-bold text-base hover:from-purple-700 hover:via-pink-700 hover:to-indigo-700 transition-all duration-500 shadow-2xl hover:shadow-3xl transform hover:scale-105 animate-glow overflow-hidden"
+                  className="group relative px-6 py-3 
+                  bg-gradient-to-r from-purple-300 to-pink-300 
+                  dark:from-purple-600 dark:to-pink-600 
+                  hover:from-purple-400 hover:to-pink-400 
+                  dark:hover:from-purple-700 dark:hover:to-pink-700 
+                  text-gray-800 dark:text-white 
+                  font-semibold text-lg rounded-xl 
+                  transition-all duration-300 animate-journey-pulse shadow-md hover:shadow-lg"
+
                 >
                   <span className="flex items-center justify-center">
                     <Calendar className="mr-2 h-5 w-5 group-hover:animate-bounce" />
@@ -155,21 +171,35 @@ const Home = () => {
               // Show auth buttons for non-authenticated users
               <>
                 <Link 
-                  to="/auth"
-                  className="group relative px-6 py-3 bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 text-white rounded-2xl font-bold text-base hover:from-purple-700 hover:via-pink-700 hover:to-indigo-700 transition-all duration-500 shadow-2xl hover:shadow-3xl transform hover:scale-105 animate-glow overflow-hidden"
-                >
+                  to="/signup"
+                  className="group relative px-6 py-3 
+                          bg-gradient-to-r from-purple-300 to-pink-300 
+                          dark:from-purple-600 dark:to-pink-600 
+                          hover:from-purple-400 hover:to-pink-400 
+                          dark:hover:from-purple-700 dark:hover:to-pink-700 
+                          text-gray-800 dark:text-white 
+                          font-semibold text-lg rounded-xl 
+                          transition-all duration-300 animate-journey-pulse shadow-md hover:shadow-lg"
+                          >
                   <span className="relative z-10 flex items-center justify-center">
-                    <Sparkles className="mr-2 h-5 w-5 animate-spin" />
+                    <Sparkles className="mr-2 h-5 w-5 group-hover:animate-bounce" />
                     Register
-                    <Heart className="ml-2 h-5 w-5 animate-pulse" />
+                    <Heart className="ml-2 h-5 w-5 agroup-hover:animate-spin" />
                   </span>
                   <div className="absolute inset-0 bg-gradient-to-r from-purple-400 via-pink-400 to-indigo-400 opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl"></div>
                 </Link>
                 <Link 
-                  to="/auth"
+                  to="/login"
                   state={{ isLogin: true }}
-                  className="group px-6 py-3 border-3 border-purple-600 text-purple-600 rounded-2xl font-bold text-base hover:bg-purple-600 hover:text-white transition-all duration-500 shadow-xl hover:shadow-2xl transform hover:scale-105 glass-effect backdrop-blur-lg bg-white/30 hover:border-pink-500"
-                >
+                   className="group relative px-6 py-3 
+                    bg-gradient-to-r from-purple-300 to-pink-300 
+                    dark:from-purple-600 dark:to-pink-600 
+                    hover:from-purple-400 hover:to-pink-400 
+                    dark:hover:from-purple-700 dark:hover:to-pink-700 
+                    text-gray-800 dark:text-white 
+                    font-semibold text-lg rounded-xl 
+                    transition-all duration-300 animate-journey-pulse shadow-md hover:shadow-lg"
+                      >
                   <span className="flex items-center justify-center">
                     <Calendar className="mr-2 h-5 w-5 group-hover:animate-bounce" />
                     Login
@@ -306,20 +336,25 @@ const Home = () => {
 
 
 
-      {/* Chat Bubble */}
-<Link
-  to="/emotionalchatbot"
-  className="fixed bottom-6 right-6 z-50"
->
-  <div className="relative group">
-    <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-purple-500 dark:from-pink-500 dark:to-purple-400 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform duration-600 animate-bounce">
-      <Heart className="h-7 w-7 text-white dark:text-white animate-pulse" />
-    </div>
-    <div className="absolute right-20 bottom-2 bg-white dark:bg-gray-800 text-sm font-semibold text-purple-600 dark:text-gray-200 px-4 py-2 rounded-2xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-fade-in">
-      Chat for support 💬
-    </div>
-  </div>
-</Link>
+      {/* Chat Bubble (now opens modal instead of navigating) */}
+      <button
+        onClick={() => setShowChatbot(true)}
+        className="fixed bottom-6 right-6 z-50"
+      >
+        <div className="relative group">
+          <div className="w-16 h-16 bg-gradient-to-br from-pink-400 to-purple-500 dark:from-pink-500 dark:to-purple-400 rounded-full shadow-lg flex items-center justify-center hover:scale-110 transition-transform duration-600 animate-bounce">
+            <Heart className="h-7 w-7 text-white dark:text-white animate-pulse" />
+          </div>
+          <div className="absolute right-20 bottom-2 bg-white dark:bg-gray-800 text-sm font-semibold text-purple-600 dark:text-gray-200 px-4 py-2 rounded-2xl shadow-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-fade-in">
+            Chat for support 💬
+          </div>
+        </div>
+      </button>
+
+      {/* Modal mount */}
+      {showChatbot && (
+        <EmotionalChatbot onClose={() => setShowChatbot(false)} />
+      )}
 
     </div>
   );

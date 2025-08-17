@@ -1,4 +1,6 @@
-import React, { useState, useMemo, useId, Suspense } from 'react';
+import React, { useState, useMemo, useId, Suspense, useEffect } from 'react';
+import ConfirmModal from '@/components/ConfirmModal';
+import { Button } from '@/components/ui/button';
 import {
   BarChart3,
   TrendingUp,
@@ -9,6 +11,19 @@ import {
   Sparkles,
   Star,
   Heart,
+  Clock,
+  Smile,
+  Frown,
+  Meh,
+  Laugh,
+  PartyPopper,
+  Moon,
+ 
+
+ 
+  Flower,
+  Leaf,
+  
 } from 'lucide-react';
 import {
   LineChart,
@@ -25,6 +40,9 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import { useNavigate } from 'react-router-dom';
 
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
@@ -32,14 +50,13 @@ import { useQuery } from '@tanstack/react-query';
 
 interface MoodEntry {
   id: string;
-  mood: string;
-  emoji: string;
-  feelings_text: string;
-  weather?: string;
-  theme?: string;
-  message?: string;
-  suggested_activities?: any;
-  created_at: string; // ISO timestamp
+  user_id?: string | null;
+  created_at?: string | null; // timestamp with time zone
+  mood?: number | null;
+  sleep_quality?: string | null;
+  weather?: string | null;
+  interaction_with?: string[] | null;
+  note?: string | null;
 }
 
 interface ChartData {
@@ -127,12 +144,470 @@ const Skeleton: React.FC = () => (
 
 const HistoryContent: React.FC = () => {
   const { user } = useAuth();
-
+  const navigate = useNavigate();
   const [viewType, setViewType] = useState<'line' | 'bar'>('line');
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'year'>('month');
   const [showCalendar, setShowCalendar] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
+  const [showNote, setShowNote] = useState<string | null>(null); // State to track which day's note to show
+  const getMoodInsights = () => {
+    const insights: string[] = [];
+
+    if (moodEntries.length < 5) {
+      insights.push("Keep logging your mood consistently to gain more personalized insights.");
+    }
+
+    // 🔹 Mood by interaction
+    const interactionMoods: Record<string, number[]> = {};
+
+    moodEntries.forEach(entry => {
+      if (entry.interaction_with && entry.mood != null) {
+        entry.interaction_with.forEach(person => {
+          if (!interactionMoods[person]) interactionMoods[person] = [];
+          interactionMoods[person].push(entry.mood);
+        });
+      }
+    });
+
+    const sortedInteractions = Object.entries(interactionMoods)
+      .map(([person, moods]) => ({
+        person,
+        avg: moods.reduce((a, b) => a + b, 0) / moods.length,
+      }))
+      .sort((a, b) => b.avg - a.avg);
+
+    const topBooster = sortedInteractions[0];
+    const topDrainer = sortedInteractions[sortedInteractions.length - 1];
+
+    if (topBooster && topBooster.avg >= 6.5) {
+      if (topBooster.person.toLowerCase() === "none") {
+        insights.push("You seem to be enjoying your own company lately — sometimes solo time is the best recharge.");
+      } else {
+        const phrases = [
+          `Spending time with ${topBooster.person} seems to give your mood a boost. Keep those good vibes rolling!`,
+          `${topBooster.person} is like your personal happiness WiFi — your mood spikes when you’re with them.`,
+          `Notice how your mood perks up around ${topBooster.person}? That’s some friendship magic!`
+        ];
+        insights.push(phrases[Math.floor(Math.random() * phrases.length)]);
+      }
+    }
+
+    if (
+      topDrainer &&
+      topDrainer.person !== topBooster?.person &&
+      topDrainer.avg <= 4.5
+    ) {
+      if (topDrainer.person.toLowerCase() === "none") {
+        insights.push("You haven’t experienced any mood drains from interactions recently. Keep it up!");
+      } else {
+        const phrases = [
+          `Spending time with ${topDrainer.person} seems to lower your mood. Maybe limit those encounters?`,
+          `${topDrainer.person} might be unintentionally zapping your happiness. Time for some emotional space!`,
+          `Notice your mood dips when you’re with ${topDrainer.person}? Protect your vibe and take care of yourself.`
+        ];
+        insights.push(phrases[Math.floor(Math.random() * phrases.length)]);
+      }
+    }
+
+    // Count sleep qualities
+    const sleepCounts: Record<string, number> = {};
+    const sleepMoodSums: Record<string, number> = {};
+    moodEntries.forEach(entry => {
+      if (entry.sleep_quality && entry.mood != null) {
+        const key = entry.sleep_quality.toLowerCase();
+        sleepCounts[key] = (sleepCounts[key] || 0) + 1;
+        sleepMoodSums[key] = (sleepMoodSums[key] || 0) + entry.mood;
+      }
+    });
+
+    // Calculate average mood per sleep quality
+    const sleepAverages = Object.keys(sleepCounts).reduce((acc, key) => {
+      acc[key] = sleepMoodSums[key] / sleepCounts[key];
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Check for alarm on poor sleep frequency
+    const totalSleepRecords = Object.values(sleepCounts).reduce((a, b) => a + b, 0);
+    const poorSleepRatio = (sleepCounts['poor'] || 0) / totalSleepRecords;
+
+    if (poorSleepRatio > 0.3) {
+      insights.push(
+        "⚠️ YOU’VE HAD QUITE A FEW POOR SLEEP NIGHTS LATELY! PRIORITIZE REST AND SELF-CARE!!"
+      );
+    } else {
+      if ((sleepCounts['good'] || 0) + (sleepCounts['excellent'] || 0) > (sleepCounts['poor'] || 0) + (sleepCounts['fair'] || 0)) {
+        insights.push(
+          "YOU SEEM TO BE GETTING DECENT SLEEP OVERALL, WHICH HELPS KEEP YOUR MOOD STABLE. NICE JOB!"
+        );
+      } else {
+        insights.push(
+          "SLEEP QUALITY HAS ROOM FOR IMPROVEMENT. BETTER REST CAN BOOST YOUR MOOD A LOT."
+        );
+      }
+    }
+
+    // Sleep quality by weather — specifically for 'excellent'
+    const excellentSleepCountsByWeather: Record<string, number> = {};
+
+    moodEntries.forEach(entry => {
+      if (entry.sleep_quality?.toLowerCase() === 'excellent' && entry.weather) {
+        const weather = entry.weather;
+        excellentSleepCountsByWeather[weather] = (excellentSleepCountsByWeather[weather] || 0) + 1;
+      }
+    });
+
+    // Find the weather with the most 'excellent' sleep counts
+    let bestWeather = '';
+    let maxExcellentCount = -1;
+
+    Object.entries(excellentSleepCountsByWeather).forEach(([weather, count]) => {
+      if (count > maxExcellentCount) {
+        maxExcellentCount = count;
+        bestWeather = weather;
+      }
+    });
+
+    if (bestWeather && maxExcellentCount >= 2) {
+      insights.push(`You tend to sleep best on ${bestWeather.toUpperCase()} days. Consider syncing your routine to those conditions.`);
+    }
+
+    // 🔹 Mood streaks
+    const lowMoodStreak = chartData.slice(-5).filter(d => d.mood <= 4).length;
+    if (lowMoodStreak >= 3) {
+      insights.push("Heads up: your mood's been dipping for a few days. Maybe try a little self-care or chat with a friend?");
+    }
+
+    // 🔹 Mood trend analysis
+    const recentMoods = chartData.slice(-5).map(d => d.mood);
+    const isDeclining = recentMoods.length >= 3 && recentMoods.every((val, i, arr) => i === 0 || val <= arr[i - 1]);
+    const recentMoodAvg = recentMoods.reduce((a, b) => a + b, 0) / recentMoods.length;
+
+    // 🔹 Overall positivity (with trend awareness)
+    if (avgMoodNum >= 7.5 && !isDeclining) {
+      const messages = [
+        "You’re radiating good vibes lately — keep riding that emotional wave!",
+        "You’ve been emotionally glowing lately. Whatever you’re doing, keep at it!",
+        "Your mood trend looks strong and positive. Love that energy!"
+      ];
+      insights.push(messages[Math.floor(Math.random() * messages.length)]);
+    } else if (avgMoodNum <= 4 || (isDeclining && recentMoodAvg <= 4.5)) {
+      insights.push("Looks like you've been facing a tough patch emotionally. It's okay to not be okay — reaching out to someone or seeking support can really help.");
+    }
+
+    // 🔹 Weather correlation
+const weatherCompliments = {
+  Sunny: [
+    "Your mood tends to beam on sunny days. Are you secretly photosynthesizing?",
+    "Sunny days really light you up! Keep soaking up that energy.",
+    "You shine bright when the sun's out. Sun-kissed vibes!"
+  ],
+  Cloudy: [
+    "You seem to find peace on cloudy days. Cozy vibes = happy vibes!",
+    "Cloudy days are your mellow mood moments. Love that chill energy.",
+    "Cloud cover doesn't dull your sparkle."
+  ],
+  Rainy: [
+    "Rainy days bring out your best. Maybe you’re just built different… or waterproof.",
+    "You maintain your composure even on rainy days—truly a testament to your emotional resilience.",
+    "Rainy weather suits you well, like a warm cup on a cold day."
+  ],
+  Snowy: [
+    "You thrive in the snowy stillness. A true winter soul ❄️",
+    "Snowy days bring out your calm and cozy side. Beautiful balance!",
+    "You're like fresh snow — pure, serene, and uplifting."
+  ],
+  Stormy: [
+    "Surprisingly, stormy skies don't dampen your spirit. You’re basically unshakable.",
+    "Storms might rage outside, but you keep your cool inside.",
+    "You handle the storm like a champ — resilient and steady."
+  ]
+};
+
+const weatherWarnings = {
+  Sunny: [
+    "Sunny days seem to drain you a bit. Shades and some quiet time might help. 🕶️",
+    "Too much sun can be tiring — remember to take breaks in the shade.",
+    "Sunny skies sometimes exhaust your energy. Stay hydrated!"
+  ],
+  Cloudy: [
+    "Cloudy skies bring a gloom to your mood too. Maybe add a little brightness to your routine?",
+    "Cloudy days can feel heavy — try some light therapy or a sunny distraction.",
+    "Don’t let the gray skies get you down. Bright moments are coming."
+  ],
+  Rainy: [
+    "Rainy days tend to bring you down. Time to break out the fuzzy socks and comfort shows!",
+    "Rainy weather might sap your energy — cozy up and take it slow.",
+    "Stormy moods come with rain. Treat yourself kindly during these days."
+  ],
+  Snowy: [
+    "Snowy days are a bit rough for you. Hot drinks and warm thoughts, friend.",
+    "Snow chills might be lowering your spirits. Wrap up warm and relax.",
+    "Winter’s beauty is tough sometimes — take extra care of yourself."
+  ],
+  Stormy: [
+    "Stormy days throw you off. Maybe unplug and ride out the chaos with calm.",
+    "The storm outside might mirror your mood. Find quiet time to regroup.",
+    "When the weather rages, find your inner calm — it helps a lot."
+  ]
+};
+
+    // 🔹 Weather correlation
+    const weatherMoods: Record<string, number[]> = {};
+    moodEntries.forEach(entry => {
+      if (entry.weather && entry.mood != null) {
+        if (!weatherMoods[entry.weather]) weatherMoods[entry.weather] = [];
+        weatherMoods[entry.weather].push(entry.mood);
+      }
+    });
+
+    const sortedWeather = Object.entries(weatherMoods)
+      .map(([weather, moods]) => ({
+        weather,
+        avg: moods.reduce((a, b) => a + b, 0) / moods.length
+      }))
+      .sort((a, b) => b.avg - a.avg);
+
+    if (sortedWeather.length > 0) {
+      const best = sortedWeather[0];
+      const avg = best.avg;
+      const weather = best.weather;
+
+      if (avg >= 6.5 && weatherCompliments[weather]) {
+        const messages = weatherCompliments[weather];
+        insights.push(messages[Math.floor(Math.random() * messages.length)]);
+      } else if (avg >= 4.5) {
+        insights.push(`Your mood on ${weather} days is moderate. Keep observing how weather affects you.`);
+      } else if (weatherWarnings[weather]) {
+        const messages = weatherWarnings[weather];
+        insights.push(messages[Math.floor(Math.random() * messages.length)]);
+      } else {
+        insights.push(`Your mood seems low on ${weather} days. Maybe find ways to boost your spirits then.`);
+      }
+    }
+
+      // 🔹 Mood volatility
+      if (chartData.length > 1) {
+        const meanMood = avgMoodNum;
+        const variance = chartData.reduce((sum, d) => sum + Math.pow(d.mood - meanMood, 2), 0) / chartData.length;
+        const stdDev = Math.sqrt(variance);
+
+        if (stdDev >= 2.5) {
+          insights.push("Your mood’s been a bit of a rollercoaster lately. Buckle up, and maybe schedule some grounding time.");
+        } else {
+          insights.push("Your mood has remained consistently stable recently, demonstrating commendable emotional balance.");
+        }
+      }
+
+      return insights;
+    };
+
+    const [showModal, setShowModal] = useState(false);
+
+    const handleConfirm = () => {
+      setShowModal(false);
+      navigate('/journey');
+    };
+
+    const handleCancel = () => {
+      setShowModal(false);
+    };
+
+  useEffect(() => {
+    const checkLastActive = async () => {
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('last_active_at')
+        .eq('id', user.id)
+        .single();
+
+      if (error || !data?.last_active_at) return;
+
+      const lastActive = new Date(data.last_active_at);
+      const now = new Date();
+      const diffInDays = (now.getTime() - lastActive.getTime()) / (1000 * 60 * 60 * 24);
+
+      if (diffInDays >= 14) {
+        setShowModal(true);
+      }
+    };
+
+    checkLastActive();
+  }, [user]);
+
+const exportMoodChartAsPDF = async (viewType: 'line' | 'bar', username: string) => { 
+  const chartEl = document.getElementById('chart-container');
+  if (!chartEl) return;
+
+  const canvas = await html2canvas(chartEl);
+  const imgData = canvas.toDataURL('image/png');
+
+  const pdf = new jsPDF({
+    orientation: 'landscape',
+    unit: 'mm',
+    format: 'a4',
+  });
+
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = pdf.internal.pageSize.getHeight();
+
+  const margin = 15;
+  const maxWidth = pdfWidth - 2 * margin;
+  const maxHeight = pdfHeight - 2 * margin;
+
+  let imgWidth = maxWidth;
+  let imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+  if (imgHeight > maxHeight) {
+    imgHeight = maxHeight;
+    imgWidth = (canvas.width * imgHeight) / canvas.height;
+  }
+
+  const x = (pdfWidth - imgWidth) / 2;
+  const y = (pdfHeight - imgHeight) / 2;
+
+  // Add chart image
+  pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+
+  // Title
+  pdf.setFont('helvetica', 'bold');
+  pdf.setFontSize(18);
+  pdf.setTextColor('#4F46E5'); 
+  pdf.text(`Mood Tracker - ${username}`, pdfWidth / 2, 18, { align: 'center' });
+
+  // Chart type subtitle
+  pdf.setFont('helvetica', 'italic');
+  pdf.setFontSize(12);
+  pdf.setTextColor('#6B7280'); 
+  pdf.text(`Chart Type: ${viewType === 'line' ? 'Line Chart' : 'Bar Chart'}`, pdfWidth / 2, 26, { align: 'center' });
+
+  // Divider line
+  pdf.setDrawColor('#A5B4FC');
+  pdf.setLineWidth(0.8);
+  pdf.line(margin, 30, pdfWidth - margin, 30);
+
+  // Average mood and trend texts (existing code)
+  const avgMood = getAverageMood();
+  const trend = getTrend();
+
+  let trendMessage = '';
+  if (trend === 'improving') {
+    trendMessage = "That's fantastic! Your mood is on the rise, keep riding that positive wave!";
+  } else if (trend === 'declining') {
+    trendMessage = "It's okay to have ups and downs. Keep your chin up; brighter days are ahead!";
+  } else {
+    trendMessage = "Steady and stable — sometimes that's exactly what we need. Keep going strong!";
+  }
+
+  pdf.setFont('times', 'normal');
+  pdf.setFontSize(16);
+  pdf.setTextColor('#333333');
+
+  let textY = y + imgHeight + 15;
+
+  // Average mood sentence
+  const textBefore = "Your mood over the recent period shows an average of ";
+  const textAfter = ".";
+
+  pdf.text(textBefore, margin, textY);
+  const avgPrefixWidth = pdf.getTextWidth(textBefore);
+
+  pdf.setFont('times', 'bold');
+  pdf.setTextColor('#4F46E5');
+  pdf.text(`${avgMood}`, margin + avgPrefixWidth + 2 * 2, textY);
+
+  const numberWidth = pdf.getTextWidth(`${avgMood}`);
+
+  pdf.setFont('times', 'normal');
+  pdf.setTextColor('#333333');
+  pdf.text(textAfter, margin + avgPrefixWidth + numberWidth + 2 * 2, textY);
+
+  textY += 10;
+
+  // Trend sentence
+  const beforeTrend = "The trend is currently ";
+  const afterTrend = ", reflecting how your feelings have been evolving.";
+
+  pdf.text(beforeTrend, margin, textY);
+  const beforeWidth = pdf.getTextWidth(beforeTrend);
+
+  pdf.setFont('times', 'bold');
+  pdf.setTextColor('#4F46E5');
+  pdf.text(trend, margin + beforeWidth + 2, textY);
+
+  const trendWidth = pdf.getTextWidth(trend);
+  pdf.setFont('times', 'normal');
+  pdf.setTextColor('#333333');
+  pdf.text(afterTrend, margin + beforeWidth + trendWidth + 4, textY);
+
+  textY += 12;
+
+  // Trend message lines
+  trendMessage.split('\n').forEach(line => {
+    pdf.text(line, margin, textY);
+    textY += 10;
+  });
+
+    const insights = getMoodInsights();
+
+    pdf.setFont('times', 'normal');
+    pdf.setFontSize(14);
+    pdf.setTextColor('#222222');
+
+    textY += 10;
+
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const bottomMargin = 15;
+
+    // Calculate approx height for title + divider + first paragraph
+    const titleHeight = 8;   // approx for title line
+    const dividerHeight = 12; // approx for divider line + spacing
+    const firstParagraph = insights[0] || '';
+    const firstParaLines = pdf.splitTextToSize(firstParagraph, maxWidth);
+    const firstParaHeight = firstParaLines.length * 8 + 5; // lines * line height + gap
+
+    const neededHeight = titleHeight + dividerHeight + firstParaHeight;
+
+    // If not enough space, add a new page before title
+    if (textY + neededHeight > pageHeight - bottomMargin) {
+      pdf.addPage();
+      textY = margin;
+    }
+
+    // Now add title and divider
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(16);
+    pdf.setTextColor('#4F46E5');
+    pdf.text('Insights', margin, textY);
+    textY += titleHeight;
+
+    pdf.setDrawColor('#A5B4FC');
+    pdf.setLineWidth(0.8);
+    pdf.line(margin, textY, pdfWidth - margin, textY);
+    textY += dividerHeight;
+
+    // Then add all insights
+    insights.forEach((insight, i) => {
+      const splitLines = pdf.splitTextToSize(insight, maxWidth);
+
+      if (textY + splitLines.length * 8 > pageHeight - bottomMargin) {
+        pdf.addPage();
+        textY = margin;
+      }
+
+      pdf.setFont('times', 'normal');
+      pdf.setFontSize(14);
+      pdf.setTextColor('#222222');
+      pdf.text(splitLines, margin, textY);
+      textY += splitLines.length * 8 + 5;
+    });
+
+    const today = new Date();
+    const formattedDate = today.toISOString().slice(0, 10); // YYYY-MM-DD format
+    pdf.save(`${username}-${viewType}-chart-${formattedDate}.pdf`);
+  };
 
   /* ----- Data Fetch ----- */
   const {
@@ -144,7 +619,7 @@ const HistoryContent: React.FC = () => {
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
-        .from('mood_entries')
+        .from('mood_track')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
@@ -158,23 +633,6 @@ const HistoryContent: React.FC = () => {
     enabled: !!user,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });
-
-  /* ----- Mood Score ----- */
-  const getMoodScore = (mood: string): number => {
-    const moodMap: { [key: string]: number } = {
-      terrible: 1,
-      bad: 2,
-      poor: 3,
-      okay: 4,
-      neutral: 5,
-      good: 6,
-      great: 7,
-      excellent: 8,
-      amazing: 9,
-      perfect: 10,
-    };
-    return moodMap[mood?.toLowerCase?.()] ?? 5;
-  };
 
   /* ----- Filter by Selected Time Range ----- */
   const filteredEntries = useMemo(() => {
@@ -205,7 +663,7 @@ const HistoryContent: React.FC = () => {
       filteredEntries
         .map((entry) => ({
           date: entry.created_at,
-          mood: getMoodScore(entry.mood),
+          mood: entry.mood,
           weather: entry.weather || 'unknown',
           formattedDate: new Date(entry.created_at).toLocaleDateString('en-US', {
             month: 'short',
@@ -215,6 +673,21 @@ const HistoryContent: React.FC = () => {
         .reverse(),
     [filteredEntries]
   );
+  /* ----- Last Mood Entry Date (not today) ----- */
+  const lastMoodEntryDate = useMemo(() => {
+    if (!moodEntries.length) return null;
+    const lastDate = moodEntries[0].created_at ? new Date(moodEntries[0].created_at) : null;
+    if (!lastDate) return null;
+    const today = new Date();
+    if (
+      lastDate.getFullYear() === today.getFullYear() &&
+      lastDate.getMonth() === today.getMonth() &&
+      lastDate.getDate() === today.getDate()
+    ) {
+      return null; // Don't show warning if last entry is today
+    }
+    return lastDate;
+  }, [moodEntries]);
 
   /* ----- Stats ----- */
   const avgMoodNum = useMemo(() => {
@@ -235,20 +708,24 @@ const HistoryContent: React.FC = () => {
   };
 
   /* ----- Calendar Helpers ----- */
-  const getMoodData = (date: Date) => {
-    const entry = moodEntries.find((e) => {
-      const d = new Date(e.created_at);
-      return isSameDay(d, date);
-    });
-    if (!entry) return null;
-    const score = getMoodScore(entry.mood);
-    const emoji = entry.emoji || FALLBACK_EMOJI_BY_SCORE[Math.round(score)] || '●';
-    return {
-      mood: score,
-      emoji,
-      moodText: entry.mood,
+    const getMoodData = (date: Date) => {
+      const entry = moodEntries.find((e) => {
+        const d = new Date(e.created_at);
+        return isSameDay(d, date);
+      });
+      if (!entry) return null;
+
+      const score = entry.mood;
+
+      const emoji = FALLBACK_EMOJI_BY_SCORE[Math.round(score)] || '●';
+
+      return {
+        mood: score,
+        emoji,
+        moodText: score.toString(), 
+        note: entry.note || '',
+      };
     };
-  };
 
   const generateCalendarDays = (month: Date) => {
     const year = month.getFullYear();
@@ -272,13 +749,14 @@ const HistoryContent: React.FC = () => {
   };
 
   /* ----- Calendar Dot Color ----- */
-  const getMoodDotClass = (score: number) => {
-    if (score <= 2) return 'text-red-400 dark:text-rose-200';
-    if (score <= 4) return 'text-orange-400 dark:text-amber-200';
-    if (score <= 6) return 'text-yellow-500 dark:text-purple-200';
-    if (score <= 8) return 'text-emerald-500 dark:text-emerald-200';
-    return 'text-teal-500 dark:text-fuchsia-200';
-  };
+ const getMoodDotClass = (score: number) => {
+  if (score >= 1 && score <= 2) return 'text-red-400 dark:text-rose-200';         // Poor
+  if (score >= 3 && score <= 4) return 'text-orange-400 dark:text-amber-200';     // Low
+  if (score >= 5 && score <= 6) return ' text-yellow-500 dark:text-yellow-300';    // Okay
+  if (score >= 7 && score <= 8) return 'text-green-500 dark:text-emerald-300';  // Good
+  if (score >= 9 && score <= 10) return 'text-sky-500 dark:text-sky-300';    // Great
+  return 'text-gray-400 dark:text-gray-300'; // fallback for invalid scores
+};
 
   /* ----- Chart Gradient IDs ----- */
   const gradientLineId = useId();
@@ -301,26 +779,27 @@ const HistoryContent: React.FC = () => {
 
       <div className="container mx-auto px-4 relative z-10">
         <div className="max-w-6xl mx-auto">
+         
           {/* Header */}
-          <div className="text-center mb-12 animate-fade-in relative">
-            <div className="flex justify-center items-center mb-6">
-              <div className="relative group">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur-lg opacity-50 animate-glow" />
-                <div className="bg-white/80 backdrop-blur-lg border-white/50 relative p-6 rounded-full shadow-2xl group-hover:scale-110 transition-transform duration-500 dark:bg-white/10 dark:border-white/20">
-                  <BarChart3 className="h-16 w-16 text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600" />
-                </div>
-              </div>
-            </div>
-            <h1 className="text-4xl md:text-5xl font-black mb-4 leading-tight text-gray-800 dark:text-white">
+         <div className="text-center mb-12 animate-fade-in relative">
+          <div className="flex justify-center items-center mb-6">
+          <div className="relative group">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 dark:from-purple-400 dark:via-pink-400 dark:to-blue-400 rounded-full blur-xl opacity-60 animate-glow"></div>
+                <div className="relative p-6 bg-white/90 dark:bg-white/10 backdrop-blur-sm rounded-full shadow-2xl border-4 border-white/60 dark:border-white/20 group-hover:scale-110 transition-transform duration-500">
+        <Clock className="h-16 w-16 text-purple-600 dark:text-white" />
+      </div>
+    </div>
+  </div>
+  <h1 className="text-4xl md:text-5xl font-black text-gray-800 dark:text-white mb-4 leading-tight transition-colors">
               Your Mood
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 animate-gradient">
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 dark:from-purple-400 dark:via-pink-400 dark:to-blue-400 animate-gradient-shift">
                 Journey History
               </span>
             </h1>
-            <p className="text-lg font-medium max-w-3xl mx-auto text-gray-600 dark:text-gray-300">
-              Track your emotional patterns and celebrate your beautiful progress over time ✨
-            </p>
-          </div>
+  <p className="text-gray-600 dark:text-gray-300 text-lg font-medium max-w-2xl mx-auto transition-colors">
+    Track your emotional patterns and celebrate your beautiful progress over time ✨
+  </p>
+</div>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
@@ -346,7 +825,7 @@ const HistoryContent: React.FC = () => {
                   })()}
                 </div>
                 <div className="p-6 bg-gradient-to-r from-blue-100/50 to-purple-100/50 dark:from-white/30 dark:to-purple-200/30 rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-500">
-                  <TrendingUp className="h-8 w-8 text-purple-400 group-hover:animate-bounce" />
+                  <TrendingUp className="h-8 w-8 text-purple-400 group-hover:animate-pulse" />
                 </div>
               </div>
             </div>
@@ -373,6 +852,11 @@ const HistoryContent: React.FC = () => {
                 <span className="font-bold text-lg text-gray-800 dark:text-white">View Options:</span>
               </div>
               <div className="flex flex-wrap gap-4">
+              <button
+                onClick={() => exportMoodChartAsPDF(viewType, user?.user_metadata?.username || user?.email || 'user')}
+              >
+                Export Chart as PDF
+              </button>
                 <div className="flex rounded-xl border-2 overflow-hidden shadow-lg border-purple-200 dark:border-white/20">
                   <button
                     onClick={() => setViewType('line')}
@@ -407,67 +891,130 @@ const HistoryContent: React.FC = () => {
               </div>
             </div>
           </div>
-
           {/* Calendar */}
-          {showCalendar && (
-            <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border-2 border-white/50 mb-12 animate-fade-in dark:bg-white/10 dark:border-white/20">
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-2xl font-black text-gray-800 dark:text-white">Mood Calendar ✨</h3>
-                <div className="flex items-center space-x-4">
-                  <button
-                    onClick={() => navigateMonth('prev')}
-                    className="p-3 hover:bg-gradient-to-r hover:from-purple-100/40 hover:to-pink-100/40 dark:hover:bg-white/10 rounded-xl transition-all duration-300 hover:scale-110"
-                  >
-                    <ChevronLeft className="h-6 w-6 text-gray-800 dark:text-white" />
-                  </button>
-                  <span className="font-bold text-xl text-gray-800 dark:text-white">
-                    {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                  </span>
-                  <button
-                    onClick={() => navigateMonth('next')}
-                    className="p-3 hover:bg-gradient-to-r hover:from-purple-100/40 hover:to-pink-100/40 dark:hover:bg-white/10 rounded-xl transition-all duration-300 hover:scale-110"
-                  >
-                    <ChevronRight className="h-6 w-6 text-gray-800 dark:text-white" />
-                  </button>
-                </div>
-              </div>
-              <div className="grid grid-cols-7 gap-3">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                  <div key={day} className="text-center text-base font-black p-3 rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 text-gray-700 dark:from-white/30 dark:to-purple-200/30 dark:text-purple-100">
-                    {day}
-                  </div>
-                ))}
-                {generateCalendarDays(currentMonth).map((day, index) => {
-                  if (!day) return <div key={index} className="p-3" />;
-                  const moodData = getMoodData(day);
-                  const dayKey = day.toISOString();
-                  const dotClass = moodData ? getMoodDotClass(moodData.mood) : '';
-                  return (
-                    <div
-                      key={dayKey}
-                      className={`p-3 text-center rounded-xl transition-all duration-300 cursor-pointer border-2 ${moodData ? 'hover:bg-gradient-to-r hover:from-blue-100 hover:to-purple-100 hover:border-purple-300 border-transparent shadow-lg hover:shadow-xl hover:scale-105 dark:hover:bg-white/10 dark:hover:border-white/20' : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 border-transparent dark:hover:bg-white/10'}`}
-                      onMouseEnter={() => moodData && setHoveredDay(dayKey)}
-                      onMouseLeave={() => setHoveredDay(null)}
-                    >
-                      <div className="text-base font-bold mb-1 text-gray-800 dark:text-white">{day.getDate()}</div>
-                      {moodData && <div className={`text-2xl animate-fade-in ${dotClass}`}>{hoveredDay === dayKey ? moodData.emoji : '●'}</div>}
-                      {moodData && hoveredDay === dayKey && <div className="text-xs mt-1 font-medium text-gray-600 dark:text-purple-100">{moodData.moodText}</div>}
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="mt-6 flex items-center justify-center flex-wrap gap-3 text-base font-medium text-gray-600 dark:text-purple-100">
-                <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full"><span>😢</span><span>Poor (1-2)</span></div>
-                <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full"><span>😔</span><span>Low (3-4)</span></div>
-                <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full"><span>😐</span><span>Okay (5-6)</span></div>
-                <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full"><span>😊</span><span>Good (7-8)</span></div>
-                <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full"><span>😄</span><span>Great (9-10)</span></div>
-              </div>
-              <div className="mt-4 text-center text-base font-medium text-gray-600 dark:text-purple-100">Hover over a day to see your mood details! ✨</div>
-            </div>
-          )}
+         
+      {showCalendar && (
+  <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border-2 border-white/50 mb-12 animate-fade-in dark:bg-white/10 dark:border-white/20">
+    <div className="flex items-center justify-between mb-8">
+      <h3 className="text-2xl font-black text-gray-800 dark:text-white">Mood Calendar ✨</h3>
+      <div className="flex items-center space-x-4">
+        <button
+          onClick={() => navigateMonth('prev')}
+          className="p-3 hover:bg-gradient-to-r hover:from-purple-100/40 hover:to-pink-100/40 dark:hover:bg-white/10 rounded-xl transition-all duration-300 hover:scale-110"
+        >
+          <ChevronLeft className="h-6 w-6 text-gray-800 dark:text-white" />
+        </button>
+        <span className="font-bold text-xl text-gray-800 dark:text-white">
+          {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+        </span>
+        <button
+          onClick={() => navigateMonth('next')}
+          className="p-3 hover:bg-gradient-to-r hover:from-purple-100/40 hover:to-pink-100/40 dark:hover:bg-white/10 rounded-xl transition-all duration-300 hover:scale-110"
+        >
+          <ChevronRight className="h-6 w-6 text-gray-800 dark:text-white" />
+        </button>
+      </div>
+    </div>
 
-          {/* Chart */}
+    <div id="calendar-to-export" className="grid grid-cols-7 gap-3">
+      {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+        <div
+          key={day}
+          className="text-center text-base font-black p-3 rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 text-gray-700 dark:from-white/30 dark:to-purple-200/30 dark:text-purple-100"
+        >
+          {day}
+        </div>
+      ))}
+
+      {generateCalendarDays(currentMonth).map((day, index) => {
+        if (!day) return <div key={index} className="p-3" />;
+
+        const moodData = getMoodData(day);
+        const dayKey = day.toISOString();
+        const dotClass = moodData ? getMoodDotClass(moodData.mood) : '';
+        const isNoteVisible = showNote === dayKey;
+
+        return (
+          <div
+            key={dayKey}
+            className={`relative p-3 text-center rounded-xl transition-all duration-300 cursor-pointer border-2 ${
+              moodData
+                ? 'hover:bg-gradient-to-r hover:from-blue-100 hover:to-purple-100 hover:border-purple-300 border-transparent shadow-lg hover:shadow-xl hover:scale-105 dark:hover:bg-white/10 dark:hover:border-white/20'
+                : 'hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100 border-transparent dark:hover:bg-white/10'
+            }`}
+            onMouseEnter={() => setHoveredDay(dayKey)}
+            onMouseLeave={() => {
+              if (!isNoteVisible) setHoveredDay(null);
+            }}
+          >
+            <div className="text-base font-bold mb-1 text-gray-800 dark:text-white">{day.getDate()}</div>
+
+            {moodData && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowNote(isNoteVisible ? null : dayKey);
+                }}
+                className="mt-2 focus:outline-none"
+              >
+                <Smile className={`h-6 w-6 ${dotClass}`} />
+              </button>
+            )}
+
+            {moodData && isNoteVisible && (
+              <div
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowNote(null);
+                }}
+                onMouseEnter={() => setHoveredDay(dayKey)}
+                onMouseLeave={() => setHoveredDay(dayKey)} // keep it open
+                className="absolute -top-28 left-1/2 transform -translate-x-1/2 p-3 bg-pink-100 dark:bg-pink-900 text-gray-800 dark:text-white rounded-lg shadow-lg border border-pink-200 dark:border-pink-800 w-fit min-w-[120px] max-w-[80%] sm:max-w-[50%] z-50"
+              >
+                <div className="text-sm font-medium whitespace-normal break-words">
+                  {moodData.note || 'No note available'}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">Click again to close</div>
+                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-pink-100 dark:border-t-pink-900"></div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+
+    {/* Mood Legend */}
+    <div className="mt-6 flex items-center justify-center flex-wrap gap-3 text-base font-medium text-gray-600 dark:text-purple-100">
+      <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full">
+        <Frown className="h-6 w-6 text-rose-500 dark:text-rose-300" />
+        <span>Poor (1-2)</span>
+      </div>
+      <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full">
+        <Meh className="h-6 w-6 text-orange-400 dark:text-amber-300" />
+        <span>Low (3-4)</span>
+      </div>
+      <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full">
+        <Smile className="h-6 w-6 text-yellow-500 dark:text-yellow-300" />
+        <span>Okay (5-6)</span>
+      </div>
+      <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full">
+        <Laugh className="h-6 w-6 text-green-500 dark:text-emerald-300" />
+        <span>Good (7-8)</span>
+      </div>
+      <div className="flex items-center space-x-2 bg-white/10 px-4 py-2 rounded-full">
+        <PartyPopper className="h-6 w-6 text-sky-500 dark:text-sky-300" />
+        <span>Great (9-10)</span>
+      </div>
+    </div>
+
+    <div className="mt-4 text-center text-base font-medium text-gray-600 dark:text-purple-100">
+      Click the face icon to see notes! ✨
+    </div>
+  </div>
+)}
+
+          
+           {/* Chart */}
           <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border-2 border-white/50 mb-12 animate-fade-in dark:bg-white/10 dark:border-white/20" style={{ animationDelay: '0.8s' }}>
             <h3 className="text-2xl font-black mb-8 text-center text-gray-800 dark:text-white">Your Mood Journey 📊</h3>
             <div className="h-96">
@@ -562,36 +1109,66 @@ const HistoryContent: React.FC = () => {
             </div>
           </div>
 
-          {/* Insights */}
-          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl p-12 border-2 border-white/50 animate-fade-in dark:bg-white/10 dark:border-white/20" style={{ animationDelay: '1s' }}>
-            <h3 className="text-3xl font-black mb-10 text-center text-gray-800 dark:text-white">Your Beautiful Insights ✨</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-8 shadow-xl border-2 border-white/50 hover:shadow-2xl transition-all duration-500 hover:scale-105 group dark:bg-white/10 dark:border-white/20 dark:hover:shadow-purple-500/20">
-                <div className="flex items-center mb-4">
-                  <div className="p-3 bg-gradient-to-r from-blue-100 to-purple-100 dark:from-white/30 dark:to-purple-200/30 rounded-xl mr-4 group-hover:scale-110 transition-transform duration-300">
-                    <span className="text-2xl">🌟</span>
-                  </div>
-                  <h4 className="font-black text-xl text-gray-800 dark:text-white">Mood Patterns</h4>
-                </div>
-                <p className="text-base leading-relaxed font-medium text-gray-600 dark:text-gray-300">
-                  Your mood journey shows beautiful patterns and growth over time. Keep tracking to discover more insights about your emotional well-being! 💫
-                </p>
-              </div>
-              <div className="bg-white/80 backdrop-blur-lg rounded-2xl p-8 shadow-xl border-2 border-white/50 hover:shadow-2xl transition-all duration-500 hover:scale-105 group dark:bg-white/10 dark:border-white/20 dark:hover:shadow-purple-500/20">
-                <div className="flex items-center mb-4">
-                  <div className="p-3 bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-white/30 dark:to-purple-200/30 rounded-xl mr-4 group-hover:scale-110 transition-transform duration-300">
-                    <span className="text-2xl">☀️</span>
-                  </div>
-                  <h4 className="font-black text-xl text-gray-800 dark:text-white">Weather Correlation</h4>
-                </div>
-                <p className="text-base leading-relaxed font-medium text-gray-600 dark:text-gray-300">
-                  Weather can influence your mood! Track how different conditions affect your feelings and use this awareness to brighten even the cloudiest days. 🌈
-                </p>
-              </div>
+         {/* Insights */}
+<div
+  className="relative animate-fade-in transition-all duration-700 ease-out transform hover:scale-[1.03] p-10 bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl border-2 border-white/50 dark:bg-white/10 dark:border-white/20 group mb-12 overflow-hidden"
+  style={{ animationDelay: '0.5s' }}
+>
+  {/* Decorative Background Icons */}
+  <div className="absolute inset-0 pointer-events-none z-0">
+    <Sparkles className="absolute top-6 left-6 w-6 h-6 text-purple-300/50 dark:text-purple-200/50 drop-shadow-sm" />
+    <Heart className="absolute bottom-8 right-8 w-7 h-7 text-pink-400/50 dark:text-pink-300/60 drop-shadow-sm animate-pulse" />
+    <Star className="absolute top-1/3 right-4 w-5 h-5 text-yellow-300/50 dark:text-yellow-200/60 drop-shadow-sm" />
+  </div>
+
+  {/* Main Content */}
+  <div className="relative z-10">
+    <div className="flex items-center justify-center w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-tr from-purple-400 to-pink-400 dark:from-purple-700 dark:to-pink-700 shadow-lg border border-white/30 group-hover:scale-110 transition-transform duration-500">
+      <Sparkles className="h-10 w-10 text-white group-hover:animate-bounce transition duration-300" />
+    </div>
+
+    <h3 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-6 group-hover:text-teal-600 dark:group-hover:text-teal-400 transition-colors">
+      Your Beautiful Insights
+    </h3>
+
+    <div className="space-y-5 text-gray-800 dark:text-gray-200 text-base font-serif max-w-2xl mx-auto">
+      {getMoodInsights().slice(0, 4).map((insight, i) => (
+        <div key={i} className="flex items-center space-x-3">
+          <Sparkles className="h-6 w-6 text-purple-400 dark:text-purple-300 flex-shrink-0" />
+          <p className="inline">" {insight} "</p>
+        </div>
+      ))}
+      {getMoodInsights().length < 4 &&
+        Array(4 - getMoodInsights().length)
+          .fill(null)
+          .map((_, i) => (
+            <div key={`placeholder-${i}`} className="flex items-center space-x-3">
+              <Sparkles className="h-6 w-6 text-purple-400 dark:text-purple-300 flex-shrink-0" />
+              <p className="inline">" Keep tracking your mood for more insights! "</p>
             </div>
-          </div>
+          ))}
+    </div>
+
+    <div className="flex justify-center mt-8">
+      <Button className="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 dark:from-purple-700 dark:to-pink-700 text-white font-bold text-lg rounded-full shadow-lg hover:from-purple-600 hover:to-pink-600 transition-transform transform hover:scale-105 duration-300">
+        <Sparkles className="w-5 h-5 mr-2" />
+        Print Your History
+      </Button>
+    </div>
+  </div>
+</div>
+
+
         </div>
       </div>
+                      {showModal && (
+                  <ConfirmModal
+                    message="Hey! You haven’t tracked your mood in awhile. Want to check in now?"
+                    onConfirm={handleConfirm}
+                    onCancel={handleCancel}
+                  />
+                )}
+
     </div>
   );
 };

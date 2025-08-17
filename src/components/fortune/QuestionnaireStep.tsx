@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
-import { UserProfile, Mood } from './FortuneApp';
+import { ChevronRight, ChevronLeft, Coins } from 'lucide-react';
+import { UserProfile, Mood } from '../../pages/Fortune';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Sparkles, Eye, RefreshCw, Star, Heart } from 'lucide-react';
@@ -15,75 +15,64 @@ interface QuestionnaireStepProps {
   username?: string;
 }
 
-const moodQuestions = [
-  {
-    id: 'morning-feeling',
-    question: 'How did you feel when you woke up this morning?',
-    options: [
-      { value: 'excited', label: 'Excited and ready for the day', mood: 'energetic' as Mood },
-      { value: 'peaceful', label: 'Calm and peaceful', mood: 'calm' as Mood },
-      { value: 'worried', label: 'Anxious or worried', mood: 'anxious' as Mood },
-      { value: 'content', label: 'Happy and content', mood: 'happy' as Mood },
-      { value: 'reflective', label: 'Thoughtful and introspective', mood: 'melancholic' as Mood },
-      { value: 'optimistic', label: 'Hopeful about what\'s ahead', mood: 'hopeful' as Mood }
-    ]
-  },
-  {
-    id: 'social-energy',
-    question: 'How have you been feeling socially lately?',
-    options: [
-      { value: 'outgoing', label: 'Eager to connect with others', mood: 'energetic' as Mood },
-      { value: 'balanced', label: 'Comfortable and balanced', mood: 'calm' as Mood },
-      { value: 'overwhelmed', label: 'Overwhelmed by social interaction', mood: 'anxious' as Mood },
-      { value: 'joyful', label: 'Enjoying meaningful time with friends', mood: 'happy' as Mood },
-      { value: 'withdrawn', label: 'Preferring solitude and reflection', mood: 'melancholic' as Mood },
-      { value: 'reconnecting', label: 'Thinking about reconnecting with people', mood: 'hopeful' as Mood }
-    ]
-  },
-  {
-    id: 'environment-impact',
-    question: 'How does your current environment make you feel?',
-    options: [
-      { value: 'motivated', label: 'It energizes and inspires me', mood: 'energetic' as Mood },
-      { value: 'soothing', label: 'It feels relaxing and comforting', mood: 'calm' as Mood },
-      { value: 'distracting', label: 'It makes me feel uneasy or distracted', mood: 'anxious' as Mood },
-      { value: 'uplifting', label: 'It brings a smile to my face', mood: 'happy' as Mood },
-      { value: 'dull', label: 'It feels dull or uninspiring', mood: 'melancholic' as Mood },
-      { value: 'refreshing', label: 'It gives me hope for a fresh start', mood: 'hopeful' as Mood }
-    ]
-  },
-  {
-    id: 'thought-patterns',
-    question: 'What kind of thoughts have been on your mind today?',
-    options: [
-      { value: 'active-ideas', label: 'New ideas and projects', mood: 'energetic' as Mood },
-      { value: 'peace', label: 'Moments of peace and clarity', mood: 'calm' as Mood },
-      { value: 'worry', label: 'Concerns about things going wrong', mood: 'anxious' as Mood },
-      { value: 'gratitude', label: 'Appreciation for the little things', mood: 'happy' as Mood },
-      { value: 'deep-thinking', label: 'Reflecting on past experiences', mood: 'melancholic' as Mood },
-      { value: 'possibilities', label: 'Dreaming about the future', mood: 'hopeful' as Mood }
-    ]
-  },
-  {
-    id: 'ideal-activity',
-    question: 'What sounds most appealing to you right now?',
-    options: [
-      { value: 'adventure', label: 'An exciting adventure or new project', mood: 'energetic' as Mood },
-      { value: 'nature', label: 'A peaceful walk in nature', mood: 'calm' as Mood },
-      { value: 'comfort', label: 'Staying in my comfort zone', mood: 'anxious' as Mood },
-      { value: 'celebration', label: 'Celebrating life with loved ones', mood: 'happy' as Mood },
-      { value: 'solitude', label: 'Quiet time for deep thinking', mood: 'melancholic' as Mood },
-      { value: 'planning', label: 'Planning for future goals', mood: 'hopeful' as Mood }
-    ]
-  }
-];
 
-export const QuestionnaireStep = ({ onComplete, username }: QuestionnaireStepProps) => {
+interface ProfileData {
+  full_name: string;
+  email: string;
+  age: string;
+  user_role: string;
+  gender: string;
+  avatar_url: string;
+}
+
+interface QuizQuestion {
+  id: number;
+  question: string;
+  type: string;
+  quiz_options: {
+    id: number;
+    value: string;
+    label: string;
+    mood: Mood;
+  }[];
+}
+
+
+
+export const QuestionnaireStep = ({ onComplete }: QuestionnaireStepProps) => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [profileName, setProfileName] = useState<string>('Quiz Taker');
-  const [loadingProfile, setLoadingProfile] = useState(false);
+  const [profileData, setProfileData] = useState<ProfileData>({
+    full_name: '',
+    email: '',
+    age: '',
+    user_role: '',
+    gender: '',
+    avatar_url: ''
+  });
+
   const { user } = useAuth();
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  function getAge(birthDateString) {
+    if (birthDateString) {
+      const today = new Date();
+      const birthDate = new Date(birthDateString);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+
+      // If birthday hasn't happened yet this year, subtract 1
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+
+      return age.toString();
+    } else {
+      return null;
+    }
+  }
+
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -91,7 +80,7 @@ export const QuestionnaireStep = ({ onComplete, username }: QuestionnaireStepPro
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('full_name')
+          .select('*')
           .eq('id', user.id)
           .single();
 
@@ -99,26 +88,124 @@ export const QuestionnaireStep = ({ onComplete, username }: QuestionnaireStepPro
           throw error;
         }
 
-        if (data?.full_name) {
-          setProfileName(data.full_name);
+        if (data) {
+          setProfileData({
+            full_name: data.full_name || '',
+            email: data.email || user.email || '',
+            age: getAge(data.date_of_birth) || '',
+            user_role: data.user_role || '',
+            gender: data.gender || '',
+            avatar_url: data.avatar_url || ''
+          });
         }
+
+
       } catch (error) {
         console.error('Error fetching profile:', error);
-        // Optional: show error toast here
       }
     };
 
     fetchProfile();
-  }, [user, supabase]);
+  }, [user]);
 
-  const progress = ((currentQuestion + 1) / moodQuestions.length) * 100;
+
+
+  useEffect(() => {
+    const randomNum: Set<number> = new Set();
+    while (randomNum.size !== 10) {
+      randomNum.add(Math.floor(Math.random() * 201));
+    }
+
+    const fetchQuiz = async () => {
+      try {
+        setLoading(true);
+        if (profileData.email) {
+
+          const userGender = profileData.gender.toLowerCase() || 'all';
+          console.log(userGender)
+          const gendersToFetch = [userGender, 'all'];
+
+          const userRole = profileData.user_role.toLowerCase() || 'all';
+          const rolesToFetch = [userRole, 'all'];
+          console.log(profileData)
+          const { data, error } = await supabase
+            .from('quiz_questions')
+            .select(`
+              id,
+              type,
+              question,
+              age_range,
+              gender,
+              user_role,
+              quiz_options(
+                id,
+                value,
+                label,
+                mood
+              )
+            `)
+            .in('gender', gendersToFetch)
+            .in('user_role', rolesToFetch)
+          if (error) {
+            console.error('Error fetching quiz questions:', error);
+          }
+
+          let randomQuestions;
+
+          if (data) {
+            if (profileData.age && profileData.age >= "20") {
+              const filteredQuestionsByAge = data.filter(question => {
+                if (question.age_range && question.age_range.includes('-')) {
+                  const ageParts = question.age_range.split('-');
+
+                  const start = parseInt(ageParts[0], 10);
+                  const end = parseInt(ageParts[1], 10);
+
+                  const userAge = Number(profileData.age);
+
+                  return userAge >= start && userAge <= end;
+                }
+
+                return false;
+              });
+              const shuffledQuestions = filteredQuestionsByAge.sort(() => 0.5 - Math.random());
+              randomQuestions = shuffledQuestions.slice(0, 10);
+
+              setQuizQuestions(randomQuestions);
+
+              console.log('Quiz questions:', randomQuestions);
+            } else {
+              const shuffledQuestions = data.sort(() => 0.5 - Math.random());
+              randomQuestions = shuffledQuestions.slice(0, 10);
+              setQuizQuestions(randomQuestions);
+
+              console.log('Quiz questions:', randomQuestions);
+            }
+          }
+        }
+
+      } catch (error) {
+        console.error("Error fetching quiz", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchQuiz();
+  }, [profileData]);
+
+  const progress = quizQuestions.length > 0
+    ? ((currentQuestion + 1) / quizQuestions.length) * 100
+    : 0;
 
   const handleNext = () => {
-    if (currentQuestion < moodQuestions.length - 1) {
+    if (quizQuestions.length === 0) return;
+
+    if (currentQuestion < quizQuestions.length - 1) {
       setCurrentQuestion(prev => prev + 1);
     } else {
-      // Calculate mood from answers and create profile
       const moodProfile = calculateMoodProfile();
+      console.log(moodProfile)
       onComplete(moodProfile);
     }
   };
@@ -134,7 +221,6 @@ export const QuestionnaireStep = ({ onComplete, username }: QuestionnaireStepPro
   };
 
   const calculateMoodProfile = (): UserProfile => {
-    // Count mood occurrences from selected answers
     const moodCounts: Record<Mood, number> = {
       energetic: 0,
       calm: 0,
@@ -145,19 +231,21 @@ export const QuestionnaireStep = ({ onComplete, username }: QuestionnaireStepPro
     };
 
     Object.entries(answers).forEach(([questionId, answerValue]) => {
-      const question = moodQuestions.find(q => q.id === questionId);
-      const selectedOption = question?.options.find(opt => opt.value === answerValue);
+
+      const question = quizQuestions.find(q => q.id.toString() === questionId);
+
+      const selectedOption = question?.quiz_options.find(opt => opt.value === answerValue);
       if (selectedOption) {
         moodCounts[selectedOption.mood]++;
       }
     });
 
-    const dominantMood = Object.entries(moodCounts).reduce((a, b) =>
-      moodCounts[a[0] as Mood] > moodCounts[b[0] as Mood] ? a : b
+    const dominantMood = Object.entries(moodCounts).reduce(
+      (prev, curr) => (curr[1] > prev[1] ? curr : prev)
     )[0] as Mood;
 
     return {
-      name: profileName,
+      name: profileData.full_name || "Emotion Seeker",
       age: '25-35',
       currentChallenge: `Feeling ${dominantMood}`,
       dreamGoal: 'Finding inner balance',
@@ -168,11 +256,37 @@ export const QuestionnaireStep = ({ onComplete, username }: QuestionnaireStepPro
   };
 
   const isCurrentStepValid = () => {
-    const currentQuestionId = moodQuestions[currentQuestion].id;
+    if (quizQuestions.length === 0) return false;
+    const currentQuestionId = quizQuestions[currentQuestion].id.toString();
     return answers[currentQuestionId] !== undefined;
   };
 
-  const currentQuestionData = moodQuestions[currentQuestion];
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin">
+          <RefreshCw className="h-8 w-8 text-purple-600" />
+        </div>
+      </div>
+    );
+  }
+
+  if (quizQuestions.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>No Questions Available</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>We couldn't load the quiz questions. Please try again later.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  const currentQuestionData = quizQuestions[currentQuestion];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-100 dark:from-gray-900 dark:via-purple-900 dark:to-pink-900 flex items-center justify-center p-4 relative overflow-hidden transition-colors">
@@ -202,7 +316,7 @@ export const QuestionnaireStep = ({ onComplete, username }: QuestionnaireStepPro
 />
 
               <p className="text-sm text-gray-600 dark:text-gray-300">
-                Question {currentQuestion + 1} of {moodQuestions.length}
+                Question {currentQuestion + 1} of {quizQuestions.length}
               </p>
             </div>
 
@@ -213,10 +327,10 @@ export const QuestionnaireStep = ({ onComplete, username }: QuestionnaireStepPro
 
               <RadioGroup
                 value={answers[currentQuestionData.id] || ''}
-                onValueChange={(value) => updateAnswer(currentQuestionData.id, value)}
+                onValueChange={(value) => updateAnswer(currentQuestionData.id.toString(), value)}
                 className="space-y-3"
               >
-                {currentQuestionData.options.map((option, index) => (
+                {currentQuestionData.quiz_options.map((option, index) => (
                   <div key={option.value} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-gradient-to-r hover:from-purple-200 hover:to-pink-200 dark:hover:from-purple-600/30 dark:hover:to-pink-600/30 transition-colors">
                     <RadioGroupItem value={option.value} id={`option-${index}`} className="mt-1" />
                     <Label htmlFor={`option-${index}`} className="text-sm leading-relaxed cursor-pointer flex-1 text-gray-700 dark:text-gray-300">
@@ -244,7 +358,7 @@ export const QuestionnaireStep = ({ onComplete, username }: QuestionnaireStepPro
               disabled={!isCurrentStepValid()}
               className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 transition-all duration-300"
             >
-              {currentQuestion === moodQuestions.length - 1 ? 'Get Results' : 'Next'}
+              {currentQuestion === quizQuestions.length - 1 ? 'Get Results' : 'Next'}
               <ChevronRight className="w-4 h-4 ml-2" />
             </Button>
           </div>
