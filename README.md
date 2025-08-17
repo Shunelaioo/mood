@@ -23,3 +23,10 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+
+This project is a modern web application built to showcase the power of AI-driven interactions and dynamic document generation. It integrates cutting-edge tools to deliver a seamless user experience, including:
+- AI inference via Hugging Face
+- Email automation using EmailJS
+- PDF generation with html2canvas and jspdf
+Whether you're experimenting with generative AI or building interactive forms, this project provides a robust foundation for rapid development and creative exploration.
+
