@@ -154,7 +154,7 @@ const HistoryContent: React.FC = () => {
   const getMoodInsights = () => {
     const insights: string[] = [];
 
-    if (moodEntries.length < 5) {
+    if (moodEntries.length < 6) {
       insights.push("Keep logging your mood consistently to gain more personalized insights.");
     }
 
