@@ -392,7 +392,9 @@ const weatherWarnings = {
         const variance = chartData.reduce((sum, d) => sum + Math.pow(d.mood - meanMood, 2), 0) / chartData.length;
         const stdDev = Math.sqrt(variance);
 
-        if (stdDev >= 2.5) {
+        if (avgMoodNum <= 4 && stdDev < 2.5) {
+          insights.push("Your mood has been low but stable. Consider gentle ways to lift your spirits—small steps can make a difference.");
+        } else if (stdDev >= 2.5) {
           insights.push("Your mood’s been a bit of a rollercoaster lately. Buckle up, and maybe schedule some grounding time.");
         } else {
           insights.push("Your mood has remained consistently stable recently, demonstrating commendable emotional balance.");
@@ -797,7 +799,7 @@ const exportMoodChartAsPDF = async (viewType: 'line' | 'bar', username: string) 
               </span>
             </h1>
   <p className="text-gray-600 dark:text-gray-300 text-lg font-medium max-w-2xl mx-auto transition-colors">
-    Track your emotional patterns and celebrate your beautiful progress over time ✨
+    Track your emotional patterns and celebrate your beautiful progress over time 
   </p>
 </div>
 
@@ -852,11 +854,6 @@ const exportMoodChartAsPDF = async (viewType: 'line' | 'bar', username: string) 
                 <span className="font-bold text-lg text-gray-800 dark:text-white">View Options:</span>
               </div>
               <div className="flex flex-wrap gap-4">
-              <button
-                onClick={() => exportMoodChartAsPDF(viewType, user?.user_metadata?.username || user?.email || 'user')}
-              >
-                Export Chart as PDF
-              </button>
                 <div className="flex rounded-xl border-2 overflow-hidden shadow-lg border-purple-200 dark:border-white/20">
                   <button
                     onClick={() => setViewType('line')}
@@ -896,7 +893,7 @@ const exportMoodChartAsPDF = async (viewType: 'line' | 'bar', username: string) 
       {showCalendar && (
   <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border-2 border-white/50 mb-12 animate-fade-in dark:bg-white/10 dark:border-white/20">
     <div className="flex items-center justify-between mb-8">
-      <h3 className="text-2xl font-black text-gray-800 dark:text-white">Mood Calendar ✨</h3>
+      <h3 className="text-2xl font-black text-gray-800 dark:text-white">Mood Calendar </h3>
       <div className="flex items-center space-x-4">
         <button
           onClick={() => navigateMonth('prev')}
@@ -1016,8 +1013,8 @@ const exportMoodChartAsPDF = async (viewType: 'line' | 'bar', username: string) 
           
            {/* Chart */}
           <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl p-8 border-2 border-white/50 mb-12 animate-fade-in dark:bg-white/10 dark:border-white/20" style={{ animationDelay: '0.8s' }}>
-            <h3 className="text-2xl font-black mb-8 text-center text-gray-800 dark:text-white">Your Mood Journey 📊</h3>
-            <div className="h-96">
+            <h3 className="text-2xl font-black mb-8 text-center text-gray-800 dark:text-white">Your Mood Journey </h3>
+            <div className="h-96" id="chart-container">
               <ResponsiveContainer width="100%" height="100%">
                 {viewType === 'line' ? (
                   <LineChart data={chartData}>
@@ -1111,7 +1108,7 @@ const exportMoodChartAsPDF = async (viewType: 'line' | 'bar', username: string) 
 
          {/* Insights */}
 <div
-  className="relative animate-fade-in transition-all duration-700 ease-out transform hover:scale-[1.03] p-10 bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl border-2 border-white/50 dark:bg-white/10 dark:border-white/20 group mb-12 overflow-hidden"
+  className="relative animate-fade-in transition-all duration-700 ease-out p-10 bg-white/80 backdrop-blur-lg rounded-2xl shadow-2xl border-2 border-white/50 dark:bg-white/10 dark:border-white/20 group mb-12 overflow-hidden"
   style={{ animationDelay: '0.5s' }}
 >
   {/* Decorative Background Icons */}
@@ -1132,25 +1129,27 @@ const exportMoodChartAsPDF = async (viewType: 'line' | 'bar', username: string) 
     </h3>
 
     <div className="space-y-5 text-gray-800 dark:text-gray-200 text-base font-serif max-w-2xl mx-auto">
-      {getMoodInsights().slice(0, 4).map((insight, i) => (
-        <div key={i} className="flex items-center space-x-3">
+      {moodEntries.length < 5 ? (
+        <div className="flex items-center space-x-3">
           <Sparkles className="h-6 w-6 text-purple-400 dark:text-purple-300 flex-shrink-0" />
-          <p className="inline">" {insight} "</p>
+          <p className="inline">" Keep logging your mood consistently to gain more personalized insights. "</p>
         </div>
-      ))}
-      {getMoodInsights().length < 4 &&
-        Array(4 - getMoodInsights().length)
-          .fill(null)
-          .map((_, i) => (
-            <div key={`placeholder-${i}`} className="flex items-center space-x-3">
+      ) : (
+        getMoodInsights().slice(0, 7).map((insight, i) => {
+          const isToughPatch = insight.toLowerCase().includes("tough patch") || insight.toLowerCase().includes("not be okay");
+          return (
+            <div key={i} className="flex items-center space-x-3">
               <Sparkles className="h-6 w-6 text-purple-400 dark:text-purple-300 flex-shrink-0" />
-              <p className="inline">" Keep tracking your mood for more insights! "</p>
+              <p className={`inline${isToughPatch ? ' text-red-600 dark:text-red-400 font-bold' : ''}`}>" {insight} "</p>
             </div>
-          ))}
+          );
+        })
+      )}
     </div>
 
     <div className="flex justify-center mt-8">
-      <Button className="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 dark:from-purple-700 dark:to-pink-700 text-white font-bold text-lg rounded-full shadow-lg hover:from-purple-600 hover:to-pink-600 transition-transform transform hover:scale-105 duration-300">
+      <Button className="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 dark:from-purple-700 dark:to-pink-700 text-white font-bold text-lg rounded-full shadow-lg hover:from-purple-600 hover:to-pink-600 transition-transform transform hover:scale-105 duration-300"
+      onClick={() => exportMoodChartAsPDF(viewType, user?.user_metadata?.username || user?.email || 'user')}>
         <Sparkles className="w-5 h-5 mr-2" />
         Print Your History
       </Button>

@@ -7,11 +7,11 @@ import { supabase } from '@/integrations/supabase/client';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState<string>('');
+  const [avatarUrl, setAvatarUrl] = useState('');
   const { user, signOut } = useAuth();
   const location = useLocation();
 
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+  const [theme, setTheme] = useState(() => {
     return localStorage.getItem('theme') === 'dark' ? 'dark' : 'light';
   });
 
@@ -69,6 +69,13 @@ const Header = () => {
   // Hide login button if on /login or /signup page
   const showLoginButton = !['/login', '/signup'].includes(location.pathname) && !user;
 
+  // Helper function to determine link class based on active state
+  const getLinkClass = (path) => {
+    return `${
+      location.pathname === path ? 'text-purple-600 dark:text-purple-400' : 'text-gray-600 dark:text-gray-300'
+    } hover:text-purple-600 dark:hover:text-purple-400 transition-colors`;
+  };
+
   return (
     <header className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700">
       <div className="container mx-auto px-4">
@@ -80,22 +87,37 @@ const Header = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-8">
-            <Link to="/" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                  <nav className="hidden md:flex space-x-8">
+            <Link
+              to="/"
+              className={getLinkClass('/')}
+            >
               Home
             </Link>
             {user && (
               <>
-                <Link to="/analyze" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                <Link
+                  to="/analyze"
+                  className={getLinkClass('/analyze')}
+                >
                   Analyze Mood
                 </Link>
-                <Link to="/journey" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                <Link
+                  to="/journey"
+                  className={getLinkClass('/journey')}
+                >
                   Mood Journey
                 </Link>
-                <Link to="/history" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                <Link
+                  to="/history"
+                  className={getLinkClass('/history')}
+                >
                   History
                 </Link>
-                <Link to="/moodgarden" className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                <Link
+                  to="/moodgarden"
+                  className={getLinkClass('/moodgarden')}
+                >
                   Mood Garden
                 </Link>
               </>
@@ -107,7 +129,7 @@ const Header = () => {
             {/* Theme Toggle Button */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+              className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray stava300 dark:hover:bg-gray-600 transition-colors"
               aria-label="Toggle Theme"
             >
               {theme === 'dark' ? <Sun className="h-5 w-5 text-yellow-400" /> : <Moon className="h-5 w-5 text-gray-800" />}
@@ -134,7 +156,7 @@ const Header = () => {
             ) : (
               showLoginButton && (
                 <Link
-                  to="/login" // Changed from /auth to /login
+                  to="/login"
                   className="hidden md:flex items-center space-x-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
                 >
                   <LogIn className="h-4 w-4" />
@@ -154,25 +176,49 @@ const Header = () => {
         {isMenuOpen && (
           <nav className="md:hidden py-4 border-t border-gray-200 dark:border-gray-700">
             <div className="flex flex-col space-y-4">
-              <Link to="/" onClick={() => setIsMenuOpen(false)} className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+              <Link
+                to="/"
+                onClick={() => setIsMenuOpen(false)}
+                className={getLinkClass('/')}
+              >
                 Home
               </Link>
               {user ? (
                 <>
-                  <Link to="/analyze" onClick={() => setIsMenuOpen(false)} className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                  <Link
+                    to="/analyze"
+                    onClick={() => setIsMenuOpen(false)}
+                    className={getLinkClass('/analyze')}
+                  >
                     Analyze Mood
                   </Link>
-                  <Link to="/journey" onClick={() => setIsMenuOpen(false)} className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                  <Link
+                    to="/journey"
+                    onClick={() => setIsMenuOpen(false)}
+                    className={getLinkClass('/journey')}
+                  >
                     Mood Journey
                   </Link>
-                  <Link to="/history" onClick={() => setIsMenuOpen(false)} className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                  <Link
+                    to="/history"
+                    onClick={() => setIsMenuOpen(false)}
+                    className={getLinkClass('/history')}
+                  >
                     History
                   </Link>
-                  <Link to="/moodgarden" onClick={() => setIsMenuOpen(false)} className="text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                  <Link
+                    to="/moodgarden"
+                    onClick={() => setIsMenuOpen(false)}
+                    className={getLinkClass('/moodgarden')}
+                  >
                     Mood Garden
                   </Link>
                   <div className="flex items-center space-x-3 pt-2 border-t border-gray-200 dark:border-gray-700">
-                    <Link to="/profile" onClick={() => setIsMenuOpen(false)} className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 transition-colors">
+                    <Link
+                      to="/profile"
+                      onClick={() => setIsMenuOpen(false)}
+                      className={getLinkClass('/profile')}
+                    >
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={avatarUrl} alt="Profile" />
                         <AvatarFallback className="bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold text-sm">
@@ -193,9 +239,9 @@ const Header = () => {
               ) : (
                 showLoginButton && (
                   <Link
-                    to="/login" // Changed from /auth to /login
+                    to="/login"
                     onClick={() => setIsMenuOpen(false)}
-                    className="flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
+                    className={getLinkClass('/login')}
                   >
                     <LogIn className="h-4 w-4" />
                     <span>Login</span>
