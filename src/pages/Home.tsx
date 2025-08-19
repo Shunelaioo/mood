@@ -88,14 +88,14 @@ const Home = () => {
               <div className="absolute inset-4 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full blur-md opacity-30 animate-float"></div>
               
               <div className="relative p-8 bg-white/90 backdrop-blur-sm rounded-full shadow-2xl border-4 border-white/80 group-hover:scale-110 transition-transform duration-500 animate-float">
-                <Brain className="h-20 w-20 text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 animate-pulse" />
-                
-                <div className="absolute inset-0 rounded-full">
-                  <div className="absolute top-1/4 left-1/4 w-6 h-0.5 bg-gradient-to-r from-purple-400 to-transparent animate-pulse opacity-70"></div>
-                  <div className="absolute top-3/4 right-1/4 w-8 h-0.5 bg-gradient-to-l from-pink-400 to-transparent animate-pulse opacity-70" style={{animationDelay: '0.5s'}}></div>
-                  <div className="absolute bottom-1/3 left-1/3 w-5 h-0.5 bg-gradient-to-r from-blue-400 to-transparent animate-pulse opacity-70" style={{animationDelay: '1s'}}></div>
-                </div>
-              </div>
+  <Brain className="h-20 w-20 text-purple-600 animate-pulse" />
+
+  <div className="absolute inset-0 rounded-full">
+    <div className="absolute top-1/4 left-1/4 w-6 h-0.5 bg-gradient-to-r from-purple-400 to-transparent animate-pulse opacity-70"></div>
+    <div className="absolute top-3/4 right-1/4 w-8 h-0.5 bg-gradient-to-l from-pink-400 to-transparent animate-pulse opacity-70" style={{ animationDelay: '0.5s' }}></div>
+    <div className="absolute bottom-1/3 left-1/3 w-5 h-0.5 bg-gradient-to-r from-blue-400 to-transparent animate-pulse opacity-70" style={{ animationDelay: '1s' }}></div>
+  </div>
+</div>
               
               <Sparkles className="absolute -top-4 -right-4 h-8 w-8 text-yellow-400 animate-sparkle" />
               <Star className="absolute -bottom-4 -left-4 h-6 w-6 text-pink-400 animate-sparkle" style={{animationDelay: '1s'}} />

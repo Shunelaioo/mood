@@ -582,7 +582,7 @@ const MoodGarden = () => {
       setSelectedDate(date);
       setShowDatePicker(false);
       setShowNoMoodPopup(false);
-      setDismissedPopupForDate(null); // Reset dismissed popup state when selecting a new date
+      setDismissedPopupForDate(null);
     }
   };
 
@@ -630,9 +630,9 @@ const MoodGarden = () => {
                 today: 'rdp-day_today',
               }}
               classNames={{
-    head_cell: "text-gray-800 dark:text-gray-200 font-semibold", // Mon/Tue etc.
-    caption_label: "text-gray-900 dark:text-gray-100 font-semibold",
-  }}
+                head_cell: "text-gray-800 dark:text-gray-200 font-semibold",
+                caption_label: "text-gray-900 dark:text-gray-100 font-semibold",
+              }}
             />
           </div>
         </div>
@@ -686,7 +686,6 @@ const MoodGarden = () => {
                 >
                   Select Another Date
                 </Button>
-               
               </div>
             </div>
           </div>
@@ -927,7 +926,7 @@ const MoodGarden = () => {
                   goals.map((goal) => (
                     <div
                       key={goal.id}
-                      className={`flex items-center space-x-4 p-4 rounded-xl transition-all duration-300 cursor-pointer group ${
+                      className={`flex items-center space-x-4 p-4 rounded-xl transition-all duration-300 group ${
                         goal.is_completed
                           ? 'bg-primary/10 border border-primary/20'
                           : 'bg-accent/10 border border-accent/20 hover:bg-gradient-to-r hover:from-emerald-50/50 hover:to-pink-50/30 dark:hover:from-emerald-900/20 dark:hover:to-pink-900/20'
@@ -935,7 +934,7 @@ const MoodGarden = () => {
                     >
                       <div className="flex-shrink-0">
                         <CheckCircle
-                          className={`w-6 h-6 transition-all duration-300 ${
+                          className={`w-6 h-6 transition-all duration-300 cursor-pointer ${
                             goal.is_completed
                               ? 'text-pink-500 scale-110'
                               : 'text-muted-foreground group-hover:text-purple-500 group-hover:scale-105'
