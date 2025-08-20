@@ -156,59 +156,94 @@ const HistoryContent: React.FC = () => {
 
     if (moodEntries.length < 6) {
       insights.push("Keep logging your mood consistently to gain more personalized insights.");
+      return insights; // Return early if not enough data
     }
 
-    // 🔹 Mood by interaction
-    const interactionMoods: Record<string, number[]> = {};
+    // 🔹 Filter to only recent entries (last 60 days) for meaningful analysis
+    const recentCutoff = daysAgo(new Date(), 60);
+    const recentEntries = moodEntries.filter(entry => 
+      new Date(entry.created_at) >= recentCutoff
+    );
 
-    moodEntries.forEach(entry => {
+    if (recentEntries.length < 3) {
+      insights.push("Log more recent entries to get current insights about your mood patterns.");
+      return insights;
+    }
+
+    // 🔹 Mood by interaction (ONLY RECENT DATA)
+    const interactionMoods: Record<string, { moods: number[], count: number, total: number }> = {};
+
+    recentEntries.forEach(entry => {
       if (entry.interaction_with && entry.mood != null) {
         entry.interaction_with.forEach(person => {
-          if (!interactionMoods[person]) interactionMoods[person] = [];
-          interactionMoods[person].push(entry.mood);
+          if (!interactionMoods[person]) {
+            interactionMoods[person] = { moods: [], count: 0, total: 0 };
+          }
+          interactionMoods[person].moods.push(entry.mood);
+          interactionMoods[person].count++;
+          interactionMoods[person].total += entry.mood;
         });
       }
     });
 
-    const sortedInteractions = Object.entries(interactionMoods)
-      .map(([person, moods]) => ({
+    // Only consider interactions with at least 2 recent entries
+    const validInteractions = Object.entries(interactionMoods)
+      .filter(([_, data]) => data.count >= 2)
+      .map(([person, data]) => ({
         person,
-        avg: moods.reduce((a, b) => a + b, 0) / moods.length,
+        avg: data.total / data.count,
+        count: data.count
       }))
       .sort((a, b) => b.avg - a.avg);
 
-    const topBooster = sortedInteractions[0];
-    const topDrainer = sortedInteractions[sortedInteractions.length - 1];
+    // Generate insights only for statistically significant patterns
+    if (validInteractions.length > 0) {
+      const topBooster = validInteractions[0];
+      const topDrainer = validInteractions[validInteractions.length - 1];
 
-    if (topBooster && topBooster.avg >= 6.5) {
-      if (topBooster.person.toLowerCase() === "none") {
-        insights.push("You seem to be enjoying your own company lately — sometimes solo time is the best recharge.");
-      } else {
-        const phrases = [
-          `Spending time with ${topBooster.person} seems to give your mood a boost. Keep those good vibes rolling!`,
-          `${topBooster.person} is like your personal happiness WiFi — your mood spikes when you’re with them.`,
-          `Notice how your mood perks up around ${topBooster.person}? That’s some friendship magic!`
-        ];
-        insights.push(phrases[Math.floor(Math.random() * phrases.length)]);
+      // Booster: avg > 5.5
+      if (topBooster && topBooster.avg > 5.5 && topBooster.count >= 2) {
+        const personLower = topBooster.person.toLowerCase();
+        if (personLower === "none") {
+          insights.push("You seem to be enjoying your own company lately — sometimes solo time is the best recharge.");
+        } else if (personLower === "others") {
+          insights.push("Spending time with other people outside your usual circle seems to lift your spirits. New connections bring fresh energy!");
+        } else {
+          const phrases = [
+            `Spending time with ${topBooster.person} seems to give your mood a boost. Keep those good vibes rolling!`,
+            `${topBooster.person} is like your personal happiness WiFi — your mood spikes when you're with them.`,
+            `Notice how your mood perks up around ${topBooster.person}? That's some connection magic!`
+          ];
+          insights.push(phrases[Math.floor(Math.random() * phrases.length)]);
+        }
+      }
+
+      // Neutral: avg between 3.5 and 5.5
+      if (topBooster && topBooster.avg <= 5.5 && topBooster.avg > 3.5 && topBooster.count >= 2) {
+        insights.push(`Spending time with ${topBooster.person} seems to have a neutral effect on your mood. It's neither a big boost nor a drain—just steady company.`);
+      }
+
+      // Drainer: avg <= 3.5
+      if (topDrainer && 
+          topDrainer.person !== topBooster?.person && 
+          topDrainer.avg <= 3.5 && 
+          topDrainer.count >= 2) {
+        const personLower = topDrainer.person.toLowerCase();
+        if (personLower === "none") {
+          insights.push("Time alone seems to be bringing your mood down lately. Maybe plan some social activities?");
+        } else if (personLower === "others") {
+          insights.push("Some interactions with people outside your usual circle seem to drain your mood. It's okay to take a break and recharge!");
+        } else {
+          const phrases = [
+            `Spending time with ${topDrainer.person} seems to lower your mood. Maybe limit those encounters?`,
+            `${topDrainer.person} might be unintentionally zapping your happiness. Time for some emotional space!`,
+            `Notice your mood dips when you're with ${topDrainer.person}? Protect your vibe and take care of yourself.`
+          ];
+          insights.push(phrases[Math.floor(Math.random() * phrases.length)]);
+        }
       }
     }
 
-    if (
-      topDrainer &&
-      topDrainer.person !== topBooster?.person &&
-      topDrainer.avg <= 4.5
-    ) {
-      if (topDrainer.person.toLowerCase() === "none") {
-        insights.push("You haven’t experienced any mood drains from interactions recently. Keep it up!");
-      } else {
-        const phrases = [
-          `Spending time with ${topDrainer.person} seems to lower your mood. Maybe limit those encounters?`,
-          `${topDrainer.person} might be unintentionally zapping your happiness. Time for some emotional space!`,
-          `Notice your mood dips when you’re with ${topDrainer.person}? Protect your vibe and take care of yourself.`
-        ];
-        insights.push(phrases[Math.floor(Math.random() * phrases.length)]);
-      }
-    }
 
     // Count sleep qualities
     const sleepCounts: Record<string, number> = {};
@@ -231,7 +266,7 @@ const HistoryContent: React.FC = () => {
     const totalSleepRecords = Object.values(sleepCounts).reduce((a, b) => a + b, 0);
     const poorSleepRatio = (sleepCounts['poor'] || 0) / totalSleepRecords;
 
-    if (poorSleepRatio > 0.3) {
+    if (poorSleepRatio > 0.4) {
       insights.push(
         "⚠️ YOU’VE HAD QUITE A FEW POOR SLEEP NIGHTS LATELY! PRIORITIZE REST AND SELF-CARE!!"
       );
@@ -278,22 +313,52 @@ const HistoryContent: React.FC = () => {
       insights.push("Heads up: your mood's been dipping for a few days. Maybe try a little self-care or chat with a friend?");
     }
 
-    // 🔹 Mood trend analysis
-    const recentMoods = chartData.slice(-5).map(d => d.mood);
-    const isDeclining = recentMoods.length >= 3 && recentMoods.every((val, i, arr) => i === 0 || val <= arr[i - 1]);
-    const recentMoodAvg = recentMoods.reduce((a, b) => a + b, 0) / recentMoods.length;
+// 🔹 Mood trend analysis - use RECENT data only
+const recentMoods = recentEntries
+    .map(entry => entry.mood)
+    .filter(mood => mood != null) as number[];
 
-    // 🔹 Overall positivity (with trend awareness)
-    if (avgMoodNum >= 7.5 && !isDeclining) {
+  let isMostlyDeclining = false;
+  let recentMoodAvg = 0;
+
+  if (recentMoods.length > 0) {
+    // Calculate differences between consecutive days
+    const diffs = recentMoods.slice(1).map((val, i) => val - recentMoods[i]);
+
+    // Count declines
+    const declines = diffs.filter(d => d < 0).length;
+
+    // If more than half of differences are negative, consider trend declining
+    isMostlyDeclining = declines >= Math.floor(diffs.length / 2);
+
+    // Compute average
+    recentMoodAvg = recentMoods.reduce((a, b) => a + b, 0) / recentMoods.length;
+  }
+
+    // 🔹 Overall positivity with recent context
+    if (recentMoodAvg >= 5.5 && !isMostlyDeclining) {
       const messages = [
-        "You’re radiating good vibes lately — keep riding that emotional wave!",
-        "You’ve been emotionally glowing lately. Whatever you’re doing, keep at it!",
-        "Your mood trend looks strong and positive. Love that energy!"
+        "You're radiating good vibes lately — keep riding that emotional wave!",
+        "You've been emotionally glowing lately. Whatever you're doing, keep at it!",
+        "Your recent mood trend looks strong and positive. Love that energy!"
       ];
       insights.push(messages[Math.floor(Math.random() * messages.length)]);
-    } else if (avgMoodNum <= 4 || (isDeclining && recentMoodAvg <= 4.5)) {
-      insights.push("Looks like you've been facing a tough patch emotionally. It's okay to not be okay — reaching out to someone or seeking support can really help.");
+    } else if (recentMoodAvg <= 3.5 || (isMostlyDeclining && recentMoodAvg <= 3.5)) {
+      insights.push(
+        "Looks like you've been facing a tough patch emotionally recently. It's okay to not be okay — reaching out for support can really help."
+      );
+    } else if (isMostlyDeclining) {
+      insights.push(
+        "Your mood seems to be trending downward lately. Consider taking small self-care steps to lift your spirits."
+      );
+    } else {
+      // Middle-range mood (3.5 < avg < 5.5)
+      insights.push(
+        "You're feeling pretty average lately — that's perfectly normal. Keep an eye on your mood and do small things that make you happy."
+      );
     }
+
+
 
     // 🔹 Weather correlation
 const weatherCompliments = {
@@ -352,49 +417,108 @@ const weatherWarnings = {
   ]
 };
 
-    // 🔹 Weather correlation
-    const weatherMoods: Record<string, number[]> = {};
-    moodEntries.forEach(entry => {
-      if (entry.weather && entry.mood != null) {
-        if (!weatherMoods[entry.weather]) weatherMoods[entry.weather] = [];
-        weatherMoods[entry.weather].push(entry.mood);
+  // 🔹 Weather correlation - FIXED VERSION
+  const weatherMoods: Record<string, { moods: number[], count: number, total: number }> = {};
+
+  // Use only recent entries (last 60 days) for meaningful analysis
+  recentEntries.forEach(entry => {
+    if (entry.weather && entry.mood != null) {
+      if (!weatherMoods[entry.weather]) {
+        weatherMoods[entry.weather] = { moods: [], count: 0, total: 0 };
       }
-    });
-
-    const sortedWeather = Object.entries(weatherMoods)
-      .map(([weather, moods]) => ({
-        weather,
-        avg: moods.reduce((a, b) => a + b, 0) / moods.length
-      }))
-      .sort((a, b) => b.avg - a.avg);
-
-    if (sortedWeather.length > 0) {
-      const best = sortedWeather[0];
-      const avg = best.avg;
-      const weather = best.weather;
-
-      if (avg >= 6.5 && weatherCompliments[weather]) {
-        const messages = weatherCompliments[weather];
-        insights.push(messages[Math.floor(Math.random() * messages.length)]);
-      } else if (avg >= 4.5) {
-        insights.push(`Your mood on ${weather} days is moderate. Keep observing how weather affects you.`);
-      } else if (weatherWarnings[weather]) {
-        const messages = weatherWarnings[weather];
-        insights.push(messages[Math.floor(Math.random() * messages.length)]);
-      } else {
-        insights.push(`Your mood seems low on ${weather} days. Maybe find ways to boost your spirits then.`);
-      }
+      weatherMoods[entry.weather].moods.push(entry.mood);
+      weatherMoods[entry.weather].count++;
+      weatherMoods[entry.weather].total += entry.mood;
     }
+  });
 
+  // Only analyze weather patterns with at least 2 recent entries
+  const validWeatherPatterns = Object.entries(weatherMoods)
+    .filter(([_, data]) => data.count >= 2)
+    .map(([weather, data]) => ({
+      weather,
+      avg: data.total / data.count,
+      count: data.count
+    }))
+    .sort((a, b) => b.avg - a.avg);
+ 
+// Generate insights for statistically significant weather patterns
+if (validWeatherPatterns.length > 0) {
+  // Only show the highest average weather insight, without calculation details
+  const bestWeather = validWeatherPatterns[0];
+  if (bestWeather) {
+    const { weather, avg } = bestWeather;
+    if (avg >= 5.5 && weatherCompliments[weather]) {
+      const messages = weatherCompliments[weather];
+      insights.push(messages[Math.floor(Math.random() * messages.length)]);
+    } else if (avg >= 3.5) {
+      insights.push(`Your mood on ${weather} days is moderate. Keep observing how weather affects you.`);
+    } else if (weatherWarnings[weather]) {
+      const messages = weatherWarnings[weather];
+      insights.push(messages[Math.floor(Math.random() * messages.length)]);
+    } else {
+      insights.push(`Your mood seems low on ${weather} days. Maybe find ways to boost your spirits then.`);
+    }
+  }
+} else {
+  // Fallback analysis with all data (not just recent)
+  const allWeatherMoods: Record<string, {moods: number[], total: number, count: number}> = {};
+  moodEntries.forEach(entry => {
+    if (entry.weather && entry.mood != null) {
+      if (!allWeatherMoods[entry.weather]) {
+        allWeatherMoods[entry.weather] = { moods: [], total: 0, count: 0 };
+      }
+      allWeatherMoods[entry.weather].moods.push(entry.mood);
+      allWeatherMoods[entry.weather].total += entry.mood;
+      allWeatherMoods[entry.weather].count++;
+    }
+  });
+
+  // Show all weather calculations in fallback with detailed math
+  const weatherCalculations = Object.entries(allWeatherMoods)
+    .map(([weather, data]) => ({
+      weather,
+      avg: data.total / data.count,
+      count: data.count,
+      moods: data.moods,
+      total: data.total
+    }))
+    .sort((a, b) => b.avg - a.avg);
+
+  weatherCalculations.forEach(({ weather, avg, count, moods, total }) => {
+    const moodList = moods.join(', ');
+    const calculationNote = ` [${weather}: ${moods.join(' + ')} = ${total} ÷ ${count} = ${avg.toFixed(1)} avg]`;
+    
+    if (avg >= 6.5 && weatherCompliments[weather]) {
+      const messages = weatherCompliments[weather];
+      insights.push(messages[Math.floor(Math.random() * messages.length)] + calculationNote);
+    } else if (avg >= 4.5) {
+      insights.push(`Your mood on ${weather} days is moderate. Keep observing how weather affects you.` + calculationNote);
+    } else if (weatherWarnings[weather]) {
+      const messages = weatherWarnings[weather];
+      insights.push(messages[Math.floor(Math.random() * messages.length)] + calculationNote);
+    } else {
+      insights.push(`Your mood seems low on ${weather} days. Maybe find ways to boost your spirits then.` + calculationNote);
+    }
+  });
+
+  // Add debug info to show which entries are being used
+  insights.push(`DEBUG: Using ${moodEntries.length} total entries for fallback analysis`);
+  moodEntries.forEach((entry, index) => {
+    if (entry.weather && entry.mood != null) {
+      insights.push(`DEBUG: Entry ${index+1}: ${entry.created_at} - ${entry.weather} - mood ${entry.mood}`);
+    }
+  });
+}
       // 🔹 Mood volatility
       if (chartData.length > 1) {
         const meanMood = avgMoodNum;
         const variance = chartData.reduce((sum, d) => sum + Math.pow(d.mood - meanMood, 2), 0) / chartData.length;
         const stdDev = Math.sqrt(variance);
 
-        if (avgMoodNum <= 4 && stdDev < 2.5) {
+        if (avgMoodNum <= 4 && stdDev < 1.5) {
           insights.push("Your mood has been low but stable. Consider gentle ways to lift your spirits—small steps can make a difference.");
-        } else if (stdDev >= 2.5) {
+        } else if (stdDev >= 1.5) {
           insights.push("Your mood’s been a bit of a rollercoaster lately. Buckle up, and maybe schedule some grounding time.");
         } else {
           insights.push("Your mood has remained consistently stable recently, demonstrating commendable emotional balance.");
@@ -700,10 +824,11 @@ const exportMoodChartAsPDF = async (viewType: 'line' | 'bar', username: string) 
   const getAverageMood = () => avgMoodNum.toFixed(1);
 
   const getTrend = () => {
-    if (chartData.length < 7) return 'stable';
+    // Always use the most recent 14 days, regardless of selected time period
+    if (chartData.length < 14) return "can't determine";
     const recent = chartData.slice(-7);
     const older = chartData.slice(-14, -7);
-    if (!older.length) return 'stable';
+    if (recent.length < 7 || older.length < 7) return "can't determine";
     const recentAvg = recent.reduce((acc, d) => acc + d.mood, 0) / recent.length;
     const olderAvg = older.reduce((acc, d) => acc + d.mood, 0) / older.length;
     return recentAvg > olderAvg ? 'improving' : recentAvg < olderAvg ? 'declining' : 'stable';

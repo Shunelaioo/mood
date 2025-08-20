@@ -131,7 +131,8 @@ const Journey = () => {
       todayDate.getDate() + 1
     ).toISOString();
 
-  const validPartners = ['family', 'friends', 'colleagues', 'partner', 'none'];
+
+  const validPartners = ['family', 'friends', 'colleagues', 'partner', 'others', 'none'];
 
   let partnerRaw = (journeyData.partner || '').toLowerCase().trim();
   const partnerValue = validPartners.includes(partnerRaw) ? partnerRaw : 'none';

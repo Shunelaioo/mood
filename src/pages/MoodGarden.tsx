@@ -549,6 +549,9 @@ const MoodGarden = () => {
 
   const { flowers, leaves, bugs, flowerCount, leafCount } = getGardenElements(moodData.mood, moodData.weather, moodData.sleep_quality);
   const completedGoals = goals.filter(goal => goal.is_completed).length;
+  const totalGoals = goals.length;
+  const completionRatio = totalGoals > 0 ? completedGoals / totalGoals : 0;
+  const sparkleCount = completionRatio < 0.5 ? 2 : completionRatio === 0.5 ? 4 : 5;
 
   const getMoodColor = (mood: number | null) => {
     if (!mood) return 'text-gray-500';
@@ -584,6 +587,14 @@ const MoodGarden = () => {
       setShowNoMoodPopup(false);
       setDismissedPopupForDate(null);
     }
+  };
+
+  // Function to format interaction_with display
+  const formatInteractionWith = (interaction: string[] | null) => {
+    if (!interaction || interaction.length === 0) {
+      return 'None';
+    }
+    return interaction.join(', ');
   };
 
   return (
@@ -772,15 +783,15 @@ const MoodGarden = () => {
                           }}
                         />
                       ))}
-                      {moodData.mood && Array.from({ length: 2 }).map((_, i) => (
-                        <div
-                          key={`orb-${i}`}
-                          className="absolute w-4 h-4 rounded-full bg-gradient-to-r from-yellow-300/50 to-pink-300/50 animate-pulse"
+                      {Array.from({ length: sparkleCount }).map((_, i) => (
+                        <Sparkles
+                          key={`sparkle-${i}`}
+                          className="absolute w-5 h-5 text-yellow-400 dark:text-yellow-300 animate-pulse"
                           style={{
-                            left: `${30 + i * 40}%`,
+                            left: `${20 + i * 15}%`,
                             top: `${15 + Math.random() * 10}%`,
-                            animationDelay: `${i}s`,
-                            filter: 'drop-shadow(0 0 8px rgba(255, 255, 255, 0.7))',
+                            animationDelay: `${i * 0.5}s`,
+                            filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.7))',
                           }}
                         />
                       ))}
@@ -805,9 +816,6 @@ const MoodGarden = () => {
                           />
                         ))}
                       </div>
-                      <Sparkles className="absolute top-8 right-16 w-6 h-6 text-yellow-400 dark:text-yellow-300 animate-pulse" style={{ animationDelay: '1s', filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.7))' }} />
-                      <Sparkles className="absolute top-20 left-20 w-4 h-4 text-pink-400 dark:text-pink-300 animate-pulse" style={{ animationDelay: '3s', filter: 'drop-shadow(0 0 5px rgba(255, 192, 203, 0.7))' }} />
-                      <Sparkles className="absolute top-12 left-40 w-5 h-5 text-purple-400 dark:text-purple-300 animate-pulse" style={{ animationDelay: '2s', filter: 'drop-shadow(0 0 5px rgba(192, 132, 252, 0.7))' }} />
                     </div>
                   </div>
                 </CardContent>
@@ -872,7 +880,7 @@ const MoodGarden = () => {
                     <div className="flex items-center justify-between p-1.5 bg-gradient-to-r from-emerald-50/50 to-pink-50/30 rounded-lg dark:from-emerald-900/20 dark:to-pink-900/20">
                       <span className="text-sm font-medium bg-gradient-to-r from-blue-500 to-indigo-500 bg-clip-text text-transparent dark:from-blue-300 dark:to-indigo-300">Connected With</span>
                       <p className="font-semibold text-xs sm:text-sm text-purple-600 dark:text-purple-300">
-                        {moodData.interaction_with?.join(', ') || '—'}
+                        {formatInteractionWith(moodData.interaction_with)}
                       </p>
                     </div>
                     <div className="flex items-center justify-between p-1.5 bg-gradient-to-r from-emerald-50/50 to-pink-50/30 rounded-lg dark:from-emerald-900/20 dark:to-pink-900/20">
@@ -951,7 +959,6 @@ const MoodGarden = () => {
                       >
                         {goal.description}
                       </span>
-                      {!goal.is_completed && getGoalIcon(goal.description)}
                       {goal.is_completed && (
                         <span className="text-2xl animate-bounce text-yellow-500">✨</span>
                       )}
@@ -1010,9 +1017,9 @@ const MoodGarden = () => {
                   </span>
                 </li>
                 <li className="flex items-start space-x-2">
-                  <Star className="w-5 h-5 text-yellow-500 mt-1" />
+                  <Sparkles className="w-5 h-5 text-yellow-500 mt-1" />
                   <span>
-                    <span className="font-medium text-yellow-500">Goals</span> are the seeds you plant—complete them to watch your garden thrive!
+                    <span className="font-medium text-yellow-500">Sparkles</span> represent your goal completion: 2 for under half, 4 for half, and 5 for over half completed.
                   </span>
                 </li>
               </ul>
