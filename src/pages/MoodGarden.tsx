@@ -406,13 +406,13 @@ const MoodGarden = () => {
     const leafCount = sleepQualityMap[normalizedSleepQuality] || 0;
     console.log('getGardenElements Input:', { mood, weather, sleep_quality: normalizedSleepQuality, leafCount });
     console.log('Generating leaves:', leafCount);
-    const bugCount = mood >= 7 ? 2 : mood >= 5 ? 1 : 0;
+    const bugCount = mood || 0; // Bug count equals mood value (or 0 if null)
+    console.log('Bug Count:', bugCount);
     const animationSpeed = 1 - (mood - 1) / 20;
     const scaleFactor = 0.8 + (mood - 1) / 20;
 
     const flowerColors = ['text-pink-500', 'text-purple-500', 'text-yellow-500', 'text-orange-400'];
     const leafColors = ['text-green-400', 'text-emerald-500', 'text-teal-500', 'text-lime-500'];
-    const bugColors = ['text-purple-300', 'text-indigo-400', 'text-blue-400'];
 
     const flowers = Array.from({ length: flowerCount }).map((_, i) => (
       <Flower
@@ -446,18 +446,36 @@ const MoodGarden = () => {
       );
     });
 
-    const bugs = Array.from({ length: bugCount }).map((_, i) => (
-      <Bug
-        key={`bug-${i}`}
-        className={`w-6 h-6 ${bugColors[i % bugColors.length]} absolute animate-bounce`}
-        style={{
-          left: `${60 + i * 20}%`,
-          top: `${15 + Math.random() * 25}%`,
-          animationDuration: `${animationSpeed}s`,
-          transform: `scale(${scaleFactor})`,
-        }}
-      />
-    ));
+    const bugs = Array.from({ length: bugCount }).map((_, i) => {
+      const baseLeft = 20 + (i * 60) / Math.max(1, bugCount - 1); // Base position in 20–80% range
+      const randomOffset = (Math.random() * 10 - 5); // ±5% for scatter
+      const left = Math.min(80, Math.max(20, baseLeft + randomOffset)); // Clamp to 20–80%
+      const top = 10 + Math.random() * 30; // Random top between 10% and 40%
+      return (
+        <div
+          key={`bug-${i}`}
+          data-testid={`bug-${i}`}
+          className="absolute animate-float"
+          style={{
+            left: `${left}%`,
+            top: `${top}%`,
+            animationDuration: `${2 + Math.random()}s`,
+            transform: `scale(${scaleFactor}) rotate(${Math.random() * 45}deg)`,
+            zIndex: 30,
+          }}
+        >
+          <Bug
+            className="w-6 h-6 text-pink-400 dark:text-pink-200 opacity-90"
+            style={{
+              filter: 'drop-shadow(0 0 8px rgba(255, 182, 193, 0.7))',
+              backgroundColor: 'rgba(255, 182, 193, 0.2)', // Fallback background
+            }}
+          />
+        </div>
+      );
+    });
+
+    console.log('Rendering bugs:', bugs.length, bugs.map(b => b.props.style));
 
     return { flowers, leaves, bugs, flowerCount, leafCount };
   };
@@ -551,7 +569,7 @@ const MoodGarden = () => {
   const completedGoals = goals.filter(goal => goal.is_completed).length;
   const totalGoals = goals.length;
   const completionRatio = totalGoals > 0 ? completedGoals / totalGoals : 0;
-  const sparkleCount = completionRatio < 0.5 ? 2 : completionRatio === 0.5 ? 4 : 5;
+  const sparkleCount = moodData.mood === null ? 0 : completionRatio < 0.5 ? 2 : completionRatio === 0.5 ? 4 : 5;
 
   const getMoodColor = (mood: number | null) => {
     if (!mood) return 'text-gray-500';
@@ -751,42 +769,29 @@ const MoodGarden = () => {
                     </defs>
                   </svg>
                   <div className={`relative h-96 bg-gradient-to-b ${getBackgroundStyle(moodData.weather)} overflow-hidden rounded-xl`}>
-                    <div className="absolute inset-0">
+                    <div className="absolute inset-0 z-0">
                       {getWeatherEffect(moodData.weather)}
                       <div className="absolute top-0 left-0 w-full h-2/3 bg-gradient-to-b from-blue-200/10 via-purple-200/5 to-transparent" />
-                      <Cloud className="absolute top-6 right-12 w-12 h-12 text-blue-300/30 dark:text-blue-200/30 animate-pulse" style={{ animationDelay: '2s' }} />
-                      <Cloud className="absolute top-12 left-16 w-8 h-8 text-purple-200/20 dark:text-purple-100/20 animate-pulse" style={{ animationDelay: '3s' }} />
-                      <Cloud className="absolute top-20 right-20 w-10 h-10 text-blue-200/25 dark:text-blue-100/25 animate-pulse" style={{ animationDelay: '1s' }} />
+                      <Cloud className="absolute top-6 right-12 w-12 h-12 text-blue-300/30 dark:text-blue-200/30 animate-pulse z-5" style={{ animationDelay: '2s' }} />
+                      <Cloud className="absolute top-12 left-16 w-8 h-8 text-purple-200/20 dark:text-purple-100/20 animate-pulse z-5" style={{ animationDelay: '3s' }} />
+                      <Cloud className="absolute top-20 right-20 w-10 h-10 text-blue-200/25 dark:text-blue-100/25 animate-pulse z-5" style={{ animationDelay: '1s' }} />
                     </div>
-                    <div className="relative h-full">
+                    <div className="relative h-full z-10">
                       {flowers.map((flower, i) => (
-                        <div key={`flower-wrap-${i}`} className="animate-wind" style={{ animationDelay: `${i * 0.2}s` }}>
+                        <div key={`flower-wrap-${i}`} className="animate-wind z-15" style={{ animationDelay: `${i * 0.2}s` }}>
                           {flower}
                         </div>
                       ))}
                       {leaves.map((leaf, i) => (
-                        <div key={`leaf-wrap-${i}`} className="animate-wind" style={{ animationDelay: `${i * 0.3}s` }}>
+                        <div key={`leaf-wrap-${i}`} className="animate-wind z-15" style={{ animationDelay: `${i * 0.3}s` }}>
                           {leaf}
                         </div>
                       ))}
                       {bugs}
-                      {moodData.mood && Array.from({ length: moodData.mood >= 6 ? 3 : 1 }).map((_, i) => (
-                        <Bug
-                          key={`butterfly-${i}`}
-                          className="w-6 h-6 text-pink-400 dark:text-pink-200 absolute animate-float"
-                          style={{
-                            left: `${20 + i * 25}%`,
-                            top: `${10 + Math.random() * 20}%`,
-                            animationDuration: `${2 + Math.random()}s`,
-                            transform: `scale(${0.8 + (moodData.mood || 0) / 20}) rotate(${Math.random() * 45}deg)`,
-                            filter: 'drop-shadow(0 0 5px rgba(255, 182, 193, 0.5))',
-                          }}
-                        />
-                      ))}
                       {Array.from({ length: sparkleCount }).map((_, i) => (
                         <Sparkles
                           key={`sparkle-${i}`}
-                          className="absolute w-5 h-5 text-yellow-400 dark:text-yellow-300 animate-pulse"
+                          className="absolute w-5 h-5 text-yellow-400 dark:text-yellow-300 animate-pulse z-20"
                           style={{
                             left: `${20 + i * 15}%`,
                             top: `${15 + Math.random() * 10}%`,
@@ -795,15 +800,15 @@ const MoodGarden = () => {
                           }}
                         />
                       ))}
-                      <Trees className="absolute left-4 bottom-12 w-16 h-16 text-emerald-500/60 dark:text-emerald-300/40" style={{ filter: 'drop-shadow(0 0 5px rgba(16, 185, 129, 0.5))' }} />
-                      <Trees className="absolute right-8 bottom-16 w-20 h-20 text-emerald-500/50 dark:text-emerald-300/30" style={{ filter: 'drop-shadow(0 0 5px rgba(16, 185, 129, 0.5))' }} />
-                      <Trees className="absolute left-20 bottom-10 w-18 h-18 text-emerald-500/55 dark:text-emerald-300/35" style={{ filter: 'drop-shadow(0 0 5px rgba(16, 185, 129, 0.5))' }} />
-                      <Trees className="absolute right-24 bottom-14 w-14 h-14 text-emerald-500/60 dark:text-emerald-300/45" style={{ filter: 'drop-shadow(0 0 5px rgba(16, 185, 129, 0.5))' }} />
-                      <Trees className="absolute left-10 bottom-8 w-12 h-12 text-emerald-500/65 dark:text-emerald-300/50" style={{ filter: 'drop-shadow(0 0 5px rgba(16, 185, 129, 0.5))' }} />
-                      <Trees className="absolute right-16 bottom-10 w-16 h-16 text-emerald-500/55 dark:text-emerald-300/35" style={{ filter: 'drop-shadow(0 0 5px rgba(16, 185, 129, 0.5))' }} />
-                      <Trees className="absolute left-30 bottom-12 w-15 h-15 text-emerald-500/60 dark:text-emerald-300/40" style={{ filter: 'drop-shadow(0 0 5px rgba(16, 185, 129, 0.5))' }} />
-                      <Trees className="absolute right-30 bottom-8 w-13 h-13 text-emerald-500/65 dark:text-emerald-300/45" style={{ filter: 'drop-shadow(0 0 5px rgba(16, 185, 129, 0.5))' }} />
-                      <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-emerald-300/30 via-lime-200/20 to-transparent">
+                      <Trees className="absolute left-4 bottom-12 w-16 h-16 text-emerald-500/60 dark:text-emerald-300/40 z-5" style={{ filter: 'drop-shadow(0 0 5px rgba(16, 185, 129, 0.5))' }} />
+                      <Trees className="absolute right-8 bottom-16 w-20 h-20 text-emerald-500/50 dark:text-emerald-300/30 z-5" style={{ filter: 'drop-shadow(0 0 5px rgba(16, 185, 129, 0.5))' }} />
+                      <Trees className="absolute left-20 bottom-10 w-18 h-18 text-emerald-500/55 dark:text-emerald-300/35 z-5" style={{ filter: 'drop-shadow(0 0 5px rgba(16, 185, 129, 0.5))' }} />
+                      <Trees className="absolute right-24 bottom-14 w-14 h-14 text-emerald-500/60 dark:text-emerald-300/45 z-5" style={{ filter: 'drop-shadow(0 0 5px rgba(16, 185, 129, 0.5))' }} />
+                      <Trees className="absolute left-10 bottom-8 w-12 h-12 text-emerald-500/65 dark:text-emerald-300/50 z-5" style={{ filter: 'drop-shadow(0 0 5px rgba(16, 185, 129, 0.5))' }} />
+                      <Trees className="absolute right-16 bottom-10 w-16 h-16 text-emerald-500/55 dark:text-emerald-300/35 z-5" style={{ filter: 'drop-shadow(0 0 5px rgba(16, 185, 129, 0.5))' }} />
+                      <Trees className="absolute left-30 bottom-12 w-15 h-15 text-emerald-500/60 dark:text-emerald-300/40 z-5" style={{ filter: 'drop-shadow(0 0 5px rgba(16, 185, 129, 0.5))' }} />
+                      <Trees className="absolute right-30 bottom-8 w-13 h-13 text-emerald-500/65 dark:text-emerald-300/45 z-5" style={{ filter: 'drop-shadow(0 0 5px rgba(16, 185, 129, 0.5))' }} />
+                      <div className="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-emerald-300/30 via-lime-200/20 to-transparent z-5">
                         {Array.from({ length: 20 }).map((_, i) => (
                           <div
                             key={`grass-${i}`}
@@ -1007,7 +1012,7 @@ const MoodGarden = () => {
                 <li className="flex items-start space-x-2">
                   <Bug className="w-5 h-5 text-purple-400 mt-1" />
                   <span>
-                    <span className="font-medium text-purple-400">Butterflies</span> appear when your mood shines bright, adding a touch of magic.
+                    <span className="font-medium text-purple-400">Butterflies</span> appear equal to your mood value: 1 butterfly for mood 1, 2 for mood 2, and so on.
                   </span>
                 </li>
                 <li className="flex items-start space-x-2">
@@ -1079,10 +1084,16 @@ const styles = `
     0% { opacity: 0; transform: scale(0.9); }
     100% { opacity: 1; transform: scale(1); }
   }
+  @keyframes float {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+    100% { transform: translateY(0); }
+  }
   .animate-rain { animation: rain 1.5s linear infinite; }
   .animate-snow { animation: snow 3s linear infinite; }
   .animate-lightning { animation: lightning 0.5s ease-in-out infinite; }
   .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+  .animate-float { animation: float 3s ease-in-out infinite; }
   .rdp {
     font-family: inherit;
     background: transparent;
